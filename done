@@ -1,0 +1,17 @@
+virtualenv -p /usr/bin/python3.6 env
+pip3 install grpcio
+pip3 install grpcio-tools
+git clone -b v1.10.x https://github.com/grpc/grpc
+
+# lets play
+# -I{folderOfProtoFile}
+python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. helloworld.proto
+
+
+# Schema
+1) Master runs the algorithm
+2) Workers subscribe to the Master ? Or Masters creates the # of workers ?
+3) Master sends a batch of data to each worker
+4) Each worker computes a gradient update, sends it back to master
+5) Master waits for all updates and computes the next step
+6) Repeat 2-5 until convergence
