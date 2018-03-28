@@ -29,7 +29,6 @@ def get_batch(batch_size=20):
             sample_id = int(sample[0])
 
             batch[sample_id] = dict(sample_labels)
-            #batch[sample_id] = sample_labels
 
             if counter % batch_size == 0:
                 yield batch
