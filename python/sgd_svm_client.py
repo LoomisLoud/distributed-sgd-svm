@@ -13,10 +13,6 @@
 # limitations under the License.
 """The Python implementation of the gRPC route guide client."""
 
-from __future__ import print_function
-
-import random
-
 import grpc
 
 import sgd_svm_pb2
@@ -27,7 +23,7 @@ import sgd_svm_resources
 #    done = stub.AddGradient(my_gradient)
 
 def get_data_from_server(stub):
-    return stub.GetData(sgd_svm_pb2.Empty())
+    return stub.GetDataLabels(sgd_svm_pb2.Empty())
 
 def send_update_to_server(stub, gradients):
     return stub.VerifyAddition(sgd_svm_pb2.Data(chunk=gradients))

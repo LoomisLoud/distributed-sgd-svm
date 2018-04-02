@@ -102,3 +102,4 @@ ENV/
 
 # data to remove from github
 data/
+python/test_notebook.ipynb

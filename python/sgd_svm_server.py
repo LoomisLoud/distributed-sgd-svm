@@ -20,7 +20,8 @@ import grpc
 
 import sgd_svm_pb2
 import sgd_svm_pb2_grpc
-import sgd_svm_resources
+import svm_function
+import data
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
@@ -31,9 +32,10 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         self.gradient_sum = 0
         self.gradients_received = 0
         self.total_clients = 0
-        self.data = iter(sgd_svm_resources.import_data())
+        self.data = iter(data.get_batch())
+        self.labels = data.load_labels()
 
-    def GetData(self, request, context):
+    def GetDataLabels(self, request, context):
         return sgd_svm_pb2.Data(chunk=next(self.data))
 
     def VerifyAddition(self, request, context):

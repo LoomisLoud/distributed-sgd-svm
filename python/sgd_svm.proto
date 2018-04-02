@@ -24,7 +24,7 @@ service SGDSVM{
   // position.
   rpc AddGradient(Gradient) returns (Gradient) {}
 
-  rpc GetData(Empty) returns (Data) {}
+  rpc GetDataLabels(Empty) returns (Data) {}
 
   rpc VerifyAddition(Data) returns (Data) {}
 }

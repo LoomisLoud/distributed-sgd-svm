@@ -18,7 +18,7 @@ def load_labels():
             data_keyed[sample].append(label)
     return data_keyed
 
-def get_batch(batch_size=20):
+def get_batch(batch_size=1):
     batch = {}
     counter = 0
     with open("../data/data") as f:
