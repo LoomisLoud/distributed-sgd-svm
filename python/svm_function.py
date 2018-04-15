@@ -3,6 +3,9 @@ from functools import reduce
 multiply = lambda item: item[0]*item[1]
 add_all = lambda y, z: y + z
 
+def sub_dict(somedict, somekeys, default=None):
+    return dict([ (k, somedict.get(k, default)) for k in somekeys ])
+
 def contains_CCAT(item):
     """
     Returns true if the labels contain CCAT, false otherwise
@@ -26,9 +29,9 @@ def calculate_loss(labels, samples, weights):
     """
     Compute loss objective function of Support Vector Machine
 
-    samples (dict{dict}): containing the samples you want to use to compute the loss
-    labels (dict): +1 or -1 labels of samples, but can be set as (list) before the function, shape = (num_sample)
-    weights (dict): shape = (num_features)
+    samples, dict{sample_id : dict{feat_id : val}}: containing the samples you want to use to compute the loss
+    final labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+    weights, dict{feat_id : val}: shape = (num_features)
     """
     weighted_sum_samples = {}
 
@@ -47,9 +50,9 @@ def is_support(label, sample, weights):
     """Function that true if the sample is in the support of the hinge function
 
     Args:
-        label ({-1,+1}): The label of the sample
-        sample (dict): feature values of the sample.
-        weights (dict) : the weight vector.
+        label, {-1,+1}: The label of the sample
+        sample, dict: feature values of the sample.
+        weights, dict : the weight vector.
 
     Returns:
         Bool: The return True when sample is in the support, False otherwise.
@@ -61,7 +64,7 @@ def is_support(label, sample, weights):
 def gradient_update(label, sample, weights):
     """Function that return the gradient update
     If the sample is not in the support, don't update the gradient (None)
-
+    
     Returns:
         dict: The gradient update with (key,value)=(label_id, update)
     """
@@ -70,3 +73,25 @@ def gradient_update(label, sample, weights):
     else:
         grad_update = None
     return grad_update
+
+def mini_batch_update(batch_, final_labels, weights,mini_batch_size):
+    
+    """Function that return the gradient update given multiple samples
+    If the sample is not in the support, don't update the gradient (None) for this specific sample
+
+    Args:
+        batch_, dict{sample_id : dict{feat_id : val}}
+        final labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+        weights, dict{feat_id : val}: shape = (num_features)
+        
+    Returns:
+        dict(feat_id: update): the gradient update 
+    """
+    
+    keys_ = list(batch_.keys())
+    multiple_batch = sub_dict(batch_, keys_[:mini_batch_size])
+    a = [(i, multiple_batch[i], final_labels[i]) for i in keys_[:mini_batch_size]]
+    b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
+    filtered_b = [x for x in b if x is not None]
+    total_grad_update = reduce((lambda x, y: {**x, **y}), filtered_b)
+    return total_grad_update
