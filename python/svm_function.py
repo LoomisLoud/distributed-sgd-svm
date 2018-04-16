@@ -30,7 +30,7 @@ def calculate_loss(labels, samples, weights):
     Compute loss objective function of Support Vector Machine
 
     samples, dict{sample_id : dict{feat_id : val}}: containing the samples you want to use to compute the loss
-    final labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+    labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
     weights, dict{feat_id : val}: shape = (num_features)
     """
     weighted_sum_samples = {}
@@ -47,7 +47,13 @@ def calculate_loss(labels, samples, weights):
     return reduce(add_all, hinge_loss_by_sample)
 
 def calculate_accuracy(labels, sample, weights):
-    
+    """
+    Compute accuracy objective function of Support Vector Machine
+        
+    samples, dict{sample_id : dict{feat_id : val}}: containing the samples you want to use to compute the loss
+    labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+    weights, dict{feat_id : val}: shape = (num_features)
+    """
     weighted_sum_samples = {}
 
     for key in samples.keys():
@@ -63,7 +69,8 @@ def calculate_accuracy(labels, sample, weights):
     return accuracy
 
 def is_support(label, sample, weights):
-    """Function that true if the sample is in the support of the hinge function
+    """
+    Function that true if the sample is in the support of the hinge function
 
     Args:
         label, {-1,+1}: The label of the sample
@@ -78,7 +85,8 @@ def is_support(label, sample, weights):
     return dot_prod*label < 1
 
 def gradient_update(label, sample, weights):
-    """Function that return the gradient update
+    """
+    Function that return the gradient update
     If the sample is not in the support, don't update the gradient (None)
     
     Returns:
@@ -92,7 +100,8 @@ def gradient_update(label, sample, weights):
 
 def mini_batch_update(batch_, final_labels, weights,mini_batch_size):
     
-    """Function that return the gradient update given multiple samples
+    """
+        Function that return the gradient update given multiple samples
     If the sample is not in the support, don't update the gradient (None) for this specific sample
 
     Args:
