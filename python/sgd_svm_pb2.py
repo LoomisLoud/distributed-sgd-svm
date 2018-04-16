@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='sgd_svm.proto',
   package='sgdsvm',
   syntax='proto3',
-  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"G\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\x12\x14\n\x0cweights_json\x18\x03 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x07\n\x05\x45mpty2\xd2\x01\n\x06SGDSVM\x12-\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x33\n\x11sendDoneComputing\x12\r.sgdsvm.Empty\x1a\r.sgdsvm.Empty\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"G\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\x12\x14\n\x0cweights_json\x18\x03 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x07\n\x05\x45mpty2\xd1\x01\n\x06SGDSVM\x12-\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x32\n\x11sendDoneComputing\x12\x0c.sgdsvm.Auth\x1a\r.sgdsvm.Empty\"\x00\x62\x06proto3')
 )
 
 
@@ -205,7 +205,7 @@ _SGDSVM = _descriptor.ServiceDescriptor(
   index=0,
   options=None,
   serialized_start=188,
-  serialized_end=398,
+  serialized_end=397,
   methods=[
   _descriptor.MethodDescriptor(
     name='getDataLabels',
@@ -239,7 +239,7 @@ _SGDSVM = _descriptor.ServiceDescriptor(
     full_name='sgdsvm.SGDSVM.sendDoneComputing',
     index=3,
     containing_service=None,
-    input_type=_EMPTY,
+    input_type=_AUTH,
     output_type=_EMPTY,
     options=None,
   ),

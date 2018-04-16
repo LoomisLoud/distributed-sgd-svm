@@ -17,7 +17,7 @@ service SGDSVM{
 
   // Tells the server that the client is done computing
   // for the current job
-  rpc sendDoneComputing(Empty) returns (Empty) {}
+  rpc sendDoneComputing(Auth) returns (Empty) {}
 }
 
 // Gradient computed composed of:

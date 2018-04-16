@@ -19,7 +19,7 @@ def contains_CCAT(item):
 
 def calculate_loss(labels, samples, weights):
     """
-    Compute loss objective function of Support Vector Machine
+    Computes loss objective function of Support Vector Machine
 
     samples (dict{dict}): containing the samples you want to use to compute the loss
     labels (dict): +1 or -1 labels of samples, but can be set as (list) before the function, shape = (num_sample)
@@ -36,10 +36,37 @@ def calculate_loss(labels, samples, weights):
     label_weighted_s = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
     # computing the hinge loss for each sample and summing
     hinge_loss_by_sample = map(lambda arg: max(0, 1-arg[0]*arg[1]), label_weighted_s)
-    return reduce(add_all, hinge_loss_by_sample)
+    return reduce(add_all, hinge_loss_by_sample)/len(samples)
+
+def calculate_accuracy(labels, samples, weights):
+    """
+    Computes accuracy objective function of Support Vector Machine
+
+    samples, dict{sample_id : dict{feat_id : val}}: containing the samples you want to use to compute the loss
+    labels, dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+    weights, dict{feat_id : val}: shape = (num_features)
+    """
+    weighted_sum_samples = {}
+
+    for key in samples.keys():
+        feats = list(samples[key].keys())
+        for i in feats:
+            if i not in weights.keys():
+                print(list(weights.keys())[:100])
+                print(i)
+                break
+        sample_weight = [(samples[key][i], weights[i]) for i in feats]
+        weighted_sum_samples[key] = reduce(add_all , map(multiply , sample_weight))
+
+    sample_ids = list(weighted_sum_samples.keys())
+    label_weighted_sum = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
+    pred = map(lambda arg: (arg[0], +1) if arg[1] >= 0 else (arg[0], -1), label_weighted_sum)
+    accuracy = reduce(add_all, map(lambda arg: 1 if arg[0] == arg[1] else 0 , pred)) / len(samples)
+    return accuracy
 
 def is_support(label, sample, weights):
-    """Function that true if the sample is in the support of the hinge function
+    """
+    Function that returns true if the sample is in the support of the hinge function
 
     Args:
         label ({-1,+1}): The label of the sample
@@ -47,20 +74,30 @@ def is_support(label, sample, weights):
         weights (dict) : the weight vector.
 
     Returns:
-        Bool: The return True when sample is in the support, False otherwise.
+        Bool: True when sample is in the support, False otherwise.
     """
     sample_weight = [(sample[i], weights[i]) for i in sample.keys()]
     dot_prod = reduce(add_all , map(multiply , sample_weight))
     return dot_prod*label < 1
 
-def gradient_update(label, sample, weights):
-    """Function that return the gradient update
-    If the sample is not in the support, don't update the gradient (None)
+def mini_batch_update(batch_, final_labels, weights):
+
+    """
+    Function that returns the gradient update given multiple samples
+    If the sample is not in the support, don't update the gradient (None) for this specific sample
+    Args:
+        batch_: dict{sample_id : dict{feat_id : val}}
+        final labels: dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+        weights: dict{feat_id : val}: shape = (num_features)
 
     Returns:
-        dict: The gradient update with (key,value)=(label_id, update)
+        dict(feat_id: update): the gradient update
     """
-    if is_support(label, sample, weights):
-        return dict(map(lambda item: (item[0],-label * item[1]) , sample.items()))
+    keys_ = list(batch_.keys())
+    a = [(i, batch_[i], final_labels[i]) for i in keys_]
+    b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
+    filtered_b = [x for x in b if x is not None]
+    if filtered_b:
+        return reduce((lambda x, y: {**x, **y}), filtered_b)
     else:
-        return None
+        return { key:0 for key in weights.keys() }

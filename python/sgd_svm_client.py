@@ -45,7 +45,7 @@ class Client(object):
         Send a message to the server telling it that we are
         done computing for the specific task
         """
-        return self.stub.sendDoneComputing(sgd_svm_pb2.Empty())
+        return self.stub.sendDoneComputing(sgd_svm_pb2.Auth(id=self.id))
 
     def authToServer(self):
         """
@@ -57,9 +57,9 @@ class Client(object):
         if auth.id != -1:
             self.connected = True
             self.id = auth.id
-            print("Client", self.id, "connected")
+            print("Client {} connected".format(self.id))
         else:
-            print("ERROR, client", self.id, "can't connect to server")
+            print("ERROR, client {} can't connect to server".format(self.id))
 
     def work(self):
         """
@@ -67,9 +67,10 @@ class Client(object):
         will iterate over them to compute updates for the gradient,
         and send them back to the aggregator (server)
         """
-        print("-------------- Connection to server --------------")
+        print("\n-------------- Connection to server --------------")
         # Authenticate
         self.authToServer()
+        print("--------------      Connected       --------------")
         while True:
             # Verify that we are still authenticated
             try:
@@ -77,11 +78,10 @@ class Client(object):
             except AssertionError:
                 break
 
-            print("-------------- GetData --------------")
             response = self.getDataFromServer()
             # If the server answers with empty data, disconnect
             if not response.samples_json:
-                print("Client", self.id, "disconnecting from server")
+                print("Client {} disconnecting from server".format(self.id))
                 self.sendDoneComputingToServer()
                 self.connected = False
                 break
@@ -91,10 +91,10 @@ class Client(object):
             samples = json.loads(response.samples_json)
             labels = json.loads(response.labels_json)
             weights = json.loads(response.weights_json)
-            current_key = list(samples.keys())[0]
-            print("Loss on client", self.id, ":", svm_function.calculate_loss(labels, samples, weights))
-            grad_update = svm_function.gradient_update(labels[current_key],samples[current_key], weights)
-            print("-------------- SendUpdate --------------")
+
+            loss = svm_function.calculate_loss(labels, samples, weights)
+            print("Loss on clients: {:.6f}".format(loss), end="\r")
+            grad_update = svm_function.mini_batch_update(samples, labels, weights)
             self.sendGradientUpdateToServer(grad_update)
 
 if __name__ == '__main__':

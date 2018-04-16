@@ -31,7 +31,7 @@ class SGDSVMStub(object):
         )
     self.sendDoneComputing = channel.unary_unary(
         '/sgdsvm.SGDSVM/sendDoneComputing',
-        request_serializer=sgd__svm__pb2.Empty.SerializeToString,
+        request_serializer=sgd__svm__pb2.Auth.SerializeToString,
         response_deserializer=sgd__svm__pb2.Empty.FromString,
         )
 
@@ -41,32 +41,32 @@ class SGDSVMServicer(object):
   """
 
   def getDataLabels(self, request, context):
-    """A simple RPC.
-    Obtains the feature at a given position.
-    A feature with an empty name is returned if there's no feature at the given
-    position.
+    """Asks the server for data, labels and weights
+    if the client is authorized, server answers with the data
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
   def auth(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
+    """Authenticating to the server, succeeds
+    if the server can still accept connections
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
   def sendGradientUpdate(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
+    """Sends the computed gradient update to the server
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
   def sendDoneComputing(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
+    """Tells the server that the client is done computing
+    for the current job
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -91,7 +91,7 @@ def add_SGDSVMServicer_to_server(servicer, server):
       ),
       'sendDoneComputing': grpc.unary_unary_rpc_method_handler(
           servicer.sendDoneComputing,
-          request_deserializer=sgd__svm__pb2.Empty.FromString,
+          request_deserializer=sgd__svm__pb2.Auth.FromString,
           response_serializer=sgd__svm__pb2.Empty.SerializeToString,
       ),
   }

@@ -12,10 +12,11 @@ import data
 
 # Constants used throughout the code
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-_NUM_TOTAL_CLIENTS = 2
+_NUM_TOTAL_CLIENTS = 5
 _NUM_FEATURES = 47236
 _NUM_SAMPLES = 781265
 _LEARNING_RATE = 0.05
+_MINI_BATCH_SIZE = 10
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """
@@ -42,11 +43,11 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         self.connected_clients = 0
 
         self.lock = threading.Lock()
-        self.data = iter(data.get_batch(1))
+        self.data = iter(data.get_batch(_MINI_BATCH_SIZE))
         self.labels = dict([ svm_function.contains_CCAT(tup) for tup in data.load_labels().items()])
 
-        self.weights = {str(feat):0 for feat in range(_NUM_FEATURES)}
-        self.weights_cumulator = {str(feat):0 for feat in range(_NUM_FEATURES)}
+        self.weights = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
+        self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
         self.gradients_received = []
 
     def waitOnAllClientConnections(self):
@@ -55,7 +56,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         first iteration, until all expected nodes connected to the server
         """
         while self.connected_clients < self.total_clients:
-            time.sleep(1)
+            continue
 
     def waitOnGradientUpdates(self, id):
         """
@@ -65,7 +66,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         and the while breaks to let the worker continue
         """
         while id in self.gradients_received:
-            continue
+            time.sleep(0.0000000000001)
 
     def getDataLabels(self, request, context):
         """
@@ -110,7 +111,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         # if we are done with the current iteration,
         # reset the cumulator of weights, and waiting list
         if len(self.gradients_received) == self.total_clients:
-            self.weights_cumulator = {str(feat):0 for feat in range(_NUM_FEATURES)}
+            self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
             self.gradients_received = []
         return sgd_svm_pb2.Empty()
 
@@ -119,13 +120,20 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         Tells the server that the worker did not get any
         data from the iterator, and that it is done computing
         """
-        print("Done computing")
+        print("Client {} is done computing".format(request.id))
         self.connected_clients -= 1
         # if we are the last client, compute
         # the accuracy and display it
         if self.connected_clients == 0:
-            print("Computing loss")
+            print("Computing accuracy...")
             # Print the loss/accuracy ?
+            # Resetting the batch if we want to run again
+            self.data = iter(data.get_batch(_MINI_BATCH_SIZE))
+            samples = data.load_test_set()
+            labels = {key:self.labels[key] for key in samples.keys()}
+            accuracy = svm_function.calculate_accuracy(labels, samples, self.weights)
+            print("Computed accuracy: {:.2f}%".format(accuracy*100))
+
         return sgd_svm_pb2.Empty()
 
     def auth(self, request, context):
@@ -143,7 +151,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             print("Client {} connected".format(self.connected_clients))
             return sgd_svm_pb2.Auth(id=self.connected_clients)
         else:
-            print("ERROR, too many clients connected".format(self.connected_clients))
+            print("ERROR, can't auth new client, maximum threshold of clients reached.".format(self.connected_clients))
             return sgd_svm_pb2.Auth(id=-1)
 
 def serve(clients):

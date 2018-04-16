@@ -5,12 +5,12 @@ data into the server. The labels file is quite small
 and hence is loaded fully in memory, while the training
 data is huge and while possible to load in memory, it
 is quite costly. This is why the get_batch function
-defines an iterator on which we can query for samples.
+defines an iterator on which we can query for samples
 """
 
 def load_labels():
     """
-    Loads the labels from disk into a dict.
+    Loads the labels from disk into a dict
 
     Returns a dict of:
         - key: id of the sample
@@ -32,7 +32,7 @@ def get_batch(batch_size=1):
     """
     Loads the training data from disk into
     an iterator used by the server to serve
-    batches of training data.
+    batches of training data
 
     Returns:
         - iterator over the data
@@ -51,3 +51,21 @@ def get_batch(batch_size=1):
             if counter % batch_size == 0:
                 yield batch
                 batch = {}
+
+def load_test_set():
+    """
+    Loads the testing data from disk into
+    a dict used by the server to compute
+    the accuracy
+
+    Returns:
+        - test set as a dict of samples
+    """
+    test_set = {}
+    with open("../data/test_set") as f:
+        for sample in f:
+            sample = sample.split()
+            sample_labels = [ (label_id, float(confidence)) for combo in sample[1:] for label_id, confidence in [combo.split(":")] ]
+            sample_id = sample[0]
+            test_set[sample_id] = dict(sample_labels)
+    return test_set
