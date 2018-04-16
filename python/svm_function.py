@@ -28,7 +28,7 @@ def calculate_loss(labels, samples, weights):
 
     samples (dict{dict}): containing the samples you want to use to compute the loss
     labels (dict): +1 or -1 labels of samples, but can be set as (list) before the function, shape = (num_sample)
-    weights (dict): shape = (num_features)
+    weights (list): shape = (num_features)
     """
     weighted_sum_samples = {}
 
@@ -66,7 +66,6 @@ def gradient_update(label, sample, weights):
         dict: The gradient update with (key,value)=(label_id, update)
     """
     if is_support(label, sample, weights):
-        grad_update = dict(map(lambda item: (item[0],-label * item[1]) , sample.items()))
+        return dict(map(lambda item: (item[0],-label * item[1]) , sample.items()))
     else:
-        grad_update = None
-    return grad_update
+        return None

@@ -1,19 +1,6 @@
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""The Python implementation of the gRPC route guide server."""
-
 from concurrent import futures
+import json
+import threading
 import time
 
 import grpc
@@ -24,44 +11,90 @@ import svm_function
 import data
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
+_NUM_TOTAL_CLIENTS = 2
+_NUM_FEATURES = 47236
+_NUM_SAMPLES = 781265
+_LEARNING_RATE = 0.05
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """Provides methods that implement functionality of route guide server."""
 
-    def __init__(self):
-        self.gradient_sum = 0
-        self.gradients_received = 0
-        self.total_clients = 0
-        self.data = iter(data.get_batch())
-        self.labels = data.load_labels()
+    def __init__(self, nb_clients):
+        self.total_clients = nb_clients
+        self.connected_clients = 0
 
-    def GetDataLabels(self, request, context):
-        return sgd_svm_pb2.Data(chunk=next(self.data))
+        self.lock = threading.Lock()
+        self.data = iter(data.get_batch(1))
+        self.labels = dict([ svm_function.contains_CCAT(tup) for tup in data.load_labels().items()])
 
-    def VerifyAddition(self, request, context):
-        return sgd_svm_pb2.Data(chunk=request.chunk)
+        self.weights = {str(feat):0 for feat in range(_NUM_FEATURES)}
+        self.weights_cumulator = {str(feat):0 for feat in range(_NUM_FEATURES)}
+        self.gradients_received = []
 
+    def waitOnAllClientConnections(self):
+        while self.connected_clients < self.total_clients:
+            time.sleep(1)
 
-    #def AddGradient(self, gradient, context):
-    #    if gradient is not None:
-    #        self.gradient_sum += gradient
-    #        self.gradients_received += 0
-    #        return self.total_clients == self.gradients_received
-    #    return None
+    def waitOnGradientUpdates(self, id):
+        while id in self.gradients_received:
+            continue
 
+    def getDataLabels(self, request, context):
+        self.waitOnAllClientConnections()
+        self.waitOnGradientUpdates(request.id)
+        try:
+            with self.lock:
+                samples = next(self.data)
+        except StopIteration:
+            return sgd_svm_pb2.Empty()
+        labels = {key:self.labels[key] for key in samples.keys()}
+        return sgd_svm_pb2.Data(samples_json=json.dumps(samples), labels_json=json.dumps(labels), weights_json=json.dumps(self.weights))
 
-def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    def sendGradientUpdate(self, request, context):
+        self.gradients_received.append(request.id)
+        grad_update = json.loads(request.gradient_update_json)
+        if grad_update:
+            for weight_id in grad_update.keys():
+                self.weights_cumulator[weight_id] += grad_update[weight_id]
+                if len(self.gradients_received) == self.total_clients:
+                    self.weights[weight_id] -= _LEARNING_RATE*self.weights_cumulator[weight_id]
+        if len(self.gradients_received) == self.total_clients:
+            self.weights_cumulator = {str(feat):0 for feat in range(_NUM_FEATURES)}
+            self.gradients_received = []
+        return sgd_svm_pb2.Empty()
+
+    def sendDoneComputing(self, request, context):
+        time.sleep(1)
+        print("Done computing")
+        self.connected_clients -= 1
+        if self.connected_clients == 0:
+            print("Computing loss")
+            # Print the loss/accuracy ?
+        return sgd_svm_pb2.Empty()
+
+    def auth(self, request, context):
+        if self.connected_clients < self.total_clients:
+            self.connected_clients += 1
+            print("Client {} connected".format(self.connected_clients))
+            return sgd_svm_pb2.Auth(id=self.connected_clients)
+        else:
+            print("ERROR, too many clients connected".format(self.connected_clients))
+            return sgd_svm_pb2.Auth(id=-1)
+
+def serve(clients):
+    print("Starting the server...")
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=clients))
     sgd_svm_pb2_grpc.add_SGDSVMServicer_to_server(
-        SGDSVM(), server)
+        SGDSVM(nb_clients=clients), server)
     server.add_insecure_port('[::]:50051')
     server.start()
+    print("Server started")
     try:
         while True:
             time.sleep(_ONE_DAY_IN_SECONDS)
     except KeyboardInterrupt:
         server.stop(0)
-
+        print("Server stopped")
 
 if __name__ == '__main__':
-    serve()
+    serve(clients=_NUM_TOTAL_CLIENTS)

@@ -22,20 +22,26 @@ service SGDSVM{
   // Obtains the feature at a given position.
   // A feature with an empty name is returned if there's no feature at the given
   // position.
-  rpc AddGradient(Gradient) returns (Gradient) {}
-
-  rpc GetDataLabels(Empty) returns (Data) {}
-
-  rpc VerifyAddition(Data) returns (Data) {}
+  rpc getDataLabels(Auth) returns (Data) {}
+  rpc auth(Empty) returns (Auth) {}
+  rpc sendGradientUpdate(GradientUpdate) returns (Empty) {}
+  rpc sendDoneComputing(Empty) returns (Empty) {}
 }
 
 // Gradient computed
-message Gradient {
-  float gradient = 1;
+message GradientUpdate {
+  string gradient_update_json = 1;
+  int32 id = 2;
 }
 
 message Data {
-  repeated float chunk = 1;
+  string samples_json = 1;
+  string labels_json = 2;
+  string weights_json = 3;
+}
+
+message Auth {
+  int32 id = 1;
 }
 
 message Empty {}

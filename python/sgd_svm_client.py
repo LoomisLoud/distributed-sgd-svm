@@ -1,45 +1,61 @@
-# Copyright 2015 gRPC authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""The Python implementation of the gRPC route guide client."""
-
 import grpc
+import json
+import random
+import svm_function
 
 import sgd_svm_pb2
 import sgd_svm_pb2_grpc
-import sgd_svm_resources
 
-#def get_update_gradient(stub, my_gradient):
-#    done = stub.AddGradient(my_gradient)
+class Client(object):
+    def __init__(self, channel=grpc.insecure_channel('localhost:50051')):
+        self.stub = sgd_svm_pb2_grpc.SGDSVMStub(channel)
+        self.connected = False
+        self.id = -1
 
-def get_data_from_server(stub):
-    return stub.GetDataLabels(sgd_svm_pb2.Empty())
+    def getDataFromServer(self):
+        return self.stub.getDataLabels(sgd_svm_pb2.Auth(id=self.id))
 
-def send_update_to_server(stub, gradients):
-    return stub.VerifyAddition(sgd_svm_pb2.Data(chunk=gradients))
+    def sendGradientUpdateToServer(self, grad_update):
+        updated_gradient = sgd_svm_pb2.GradientUpdate(gradient_update_json=json.dumps(grad_update), id=self.id)
+        return self.stub.sendGradientUpdate(updated_gradient)
 
-def run():
-    channel = grpc.insecure_channel('localhost:50051')
-    stub = sgd_svm_pb2_grpc.SGDSVMStub(channel)
-    print("-------------- GetData --------------")
-    response = get_data_from_server(stub)
-    print("Server answered:")
-    print(response.chunk)
-    tryout = [sum(response.chunk), 0, 0]
-    response = send_update_to_server(stub, tryout)
-    print("-------------- AddSend --------------")
-    print("Server answered the sum of gradients:")
-    print(response.chunk)
+    def sendDoneComputingToServer(self):
+        return self.stub.sendDoneComputing(sgd_svm_pb2.Empty())
+
+    def authToServer(self):
+        auth = self.stub.auth(sgd_svm_pb2.Empty())
+        if auth.id != -1:
+            self.connected = True
+            self.id = auth.id
+            print("Client", self.id, "connected")
+        else:
+            print("ERROR, client", self.id, "can't connect to server")
+
+    def work(self):
+        print("-------------- Connection to server --------------")
+        self.authToServer()
+        while True:
+            try:
+                assert self.connected, "ERROR: client {} not connected to the server".format(self.id)
+            except AssertionError:
+                break
+            print("-------------- GetData --------------")
+            response = self.getDataFromServer()
+            if not response.samples_json:
+                print("Client", self.id, "disconnecting from server")
+                self.sendDoneComputingToServer()
+                self.connected = False
+                break
+            samples = json.loads(response.samples_json)
+            labels = json.loads(response.labels_json)
+            weights = json.loads(response.weights_json)
+            current_key = list(samples.keys())[0]
+            print("Loss on client", self.id, ":", svm_function.calculate_loss(labels, samples, weights))
+
+            grad_update = svm_function.gradient_update(labels[current_key],samples[current_key], weights)
+            print("-------------- SendUpdate --------------")
+            self.sendGradientUpdateToServer(grad_update)
 
 if __name__ == '__main__':
-    run()
+    client = Client()
+    client.work()

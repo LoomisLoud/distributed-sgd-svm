@@ -11,7 +11,7 @@ def load_labels():
     data = map(lambda x: x.split()[:-1], data)
     data_keyed = {}
     for label, sample in data:
-        sample = int(sample)
+        #sample = int(sample)
         if sample not in data_keyed.keys():
             data_keyed[sample] = [label]
         else:
@@ -25,11 +25,9 @@ def get_batch(batch_size=1):
         for sample in f:
             counter += 1
             sample = sample.split()
-            sample_labels = [ (int(label_id), float(confidence)) for combo in sample[1:] for label_id, confidence in [combo.split(":")] ]
-            sample_id = int(sample[0])
-
+            sample_labels = [ (label_id, float(confidence)) for combo in sample[1:] for label_id, confidence in [combo.split(":")] ]
+            sample_id = sample[0]
             batch[sample_id] = dict(sample_labels)
-
             if counter % batch_size == 0:
                 yield batch
                 batch = {}
