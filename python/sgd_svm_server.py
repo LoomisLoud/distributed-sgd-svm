@@ -1,18 +1,19 @@
 from concurrent import futures
+import grpc
 import json
+import sys
 import threading
 import time
 
-import grpc
-
+import data
 import sgd_svm_pb2
 import sgd_svm_pb2_grpc
 import svm_function
-import data
 
 # Constants used throughout the code
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
-_NUM_TOTAL_CLIENTS = 5
+# getting the total number of clients through commandline
+_NUM_TOTAL_CLIENTS = int(sys.argv[-1])
 _NUM_FEATURES = 47236
 _NUM_SAMPLES = 781265
 _LEARNING_RATE = 0.05

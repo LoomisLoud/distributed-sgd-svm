@@ -7,15 +7,15 @@ The aim of the project is to run a Support Vector Machine trained using Stochast
 
 Store the training data in a file called `data` inside the data folder, alongside your testing set called `test_set` and the labels called `rcv1-v2.topics.qrels`. Install the required python libraries using `pip install -r requirements.txt` and setup gRPC by running: `python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. sgd_svm.proto`.
 
-To have a full view of what happens on the server and the clients, use two terminals, in one, run: `python sgd_svm_server.py` and in the other, run the shell script which will launch all the clients and start the computation: `chmod +x run.sh && ./run.sh`.
+To have a full view of what happens on the server and the clients, use two terminals, in one, run: `python sgd_svm_server.py X` replacing X with the number of clients you want and in the other, run the shell script which will launch all the clients and start the computation: `chmod +x run.sh && ./run.sh X`, using the same X as number of clients.
 
 Running our code on the full dataset takes X time and returns an accuracy of 95%.
 
 ## Explanations and choices
 ### Machine learning wise
-We have first labelled the dataset by looking whether each sample contains the word "CCAT" or not, assigning -1 and +1. The Support Vector Machine (SVM) algorithm tries to find the best hyperplane that separates our data point by maximising the margin -that is the distance between the hyperplane itself to hyperplane 's closest data point.
+We have first labelled the dataset by looking whether each sample contains the word "CCAT" or not, assigning -1 and +1. The Support Vector Machine (SVM) algorithm tries to find the best hyperplane that separates our data points by maximising the margin -that is the distance between the hyperplane itself to hyperplane 's closest data point.
 
-We have implemented in python a stochastic gradient descent for this binary classification problem. We have used the standard SVM loss function, hinge loss function. Loss is computed using `calculate_loss` in `svm_function.py` file. Gradient is computed in function `mini_batch_update` where you can send samples one by one to do the formal stochastic gradient descent.
+We have implemented in Python a stochastic gradient descent for this binary classification problem. We have used the standard SVM loss function: hinge loss function. Loss is computed using `calculate_loss` in `svm_function.py` file. Gradient is computed in function `mini_batch_update` where you can send samples one by one to do the formal stochastic gradient descent.
 
 ### Systems decisions
 For this first milestone, we split the work among multiple workers. The whole data and weight vector (that uniquely determine a hyperplane) are both stored in the main server. This choice is justified since we are processing on one computer and every one has access to the same ram. These choices will obviously evolve as we move onto a cluster for the next milestone. 
