@@ -60,7 +60,7 @@ def calculate_accuracy(labels, sample, weights):
     pred = map(lambda arg: (arg[0], +1) if arg[1] >= 0 else (arg[0], -1), label_weighted_sum)
     accuracy = reduce(add_all, map(lambda arg: 1 if arg[0] == arg[1] else 0 , pred)) / len(samples)
     
-    return accruacy
+    return accuracy
 
 def is_support(label, sample, weights):
     """Function that true if the sample is in the support of the hinge function
