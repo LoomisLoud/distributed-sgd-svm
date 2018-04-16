@@ -41,10 +41,26 @@ def calculate_loss(labels, samples, weights):
         weighted_sum_samples[key] = reduce(add_all , map(multiply , sample_weight))
 
     sample_ids = list(weighted_sum_samples.keys())
-    label_weighted_s = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
+    label_weighted_sum = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
     # computing the hinge loss for each sample and summing
-    hinge_loss_by_sample = map(lambda arg: max(0, 1-arg[0]*arg[1]), label_weighted_s)
+    hinge_loss_by_sample = map(lambda arg: max(0, 1-arg[0]*arg[1]), label_weighted_sum)
     return reduce(add_all, hinge_loss_by_sample)
+
+def calculate_accuracy(labels, sample, weights):
+    
+    weighted_sum_samples = {}
+
+    for key in samples.keys():
+        feats = list(samples[key].keys())
+        sample_weight = [(samples[key][i], weights[i]) for i in feats]
+        weighted_sum_samples[key] = reduce(add_all , map(multiply , sample_weight))
+        
+    sample_ids = list(weighted_sum_samples.keys())
+    label_weighted_sum = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
+    pred = map(lambda arg: (arg[0], +1) if arg[1] >= 0 else (arg[0], -1), label_weighted_sum)
+    accuracy = reduce(add_all, map(lambda arg: 1 if arg[0] == arg[1] else 0 , pred)) / len(samples)
+    
+    return accruacy
 
 def is_support(label, sample, weights):
     """Function that true if the sample is in the support of the hinge function
