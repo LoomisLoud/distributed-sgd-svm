@@ -9,7 +9,7 @@ Store the training data in a file called `data` inside the data folder, alongsid
 
 To have a full view of what happens on the server and the clients, use two terminals, in one, run: `python sgd_svm_server.py X` replacing X with the number of clients you want and in the other, run the shell script which will launch all the clients and start the computation: `chmod +x run.sh && ./run.sh X`, using the same X as number of clients.
 
-Running our code on the full dataset takes X time and returns an accuracy of 95%.
+Running the code on 20 000 samples in the training set with 5 nodes and a mini batch of size 10 takes less than 2 minutes and returns an accuracy of 95%. Running on the full dataset with as small a number of workers as 5 should a bit less than an hour.
 
 ## Explanations and choices
 ### Machine learning wise
@@ -18,7 +18,7 @@ We have first labelled the dataset by looking whether each sample contains the w
 We have implemented in Python a stochastic gradient descent for this binary classification problem. We have used the standard SVM loss function: hinge loss function. Loss is computed using `calculate_loss` in `svm_function.py` file. Gradient is computed in function `mini_batch_update` where you can send samples one by one to do the formal stochastic gradient descent.
 
 ### Systems decisions
-For this first milestone, we split the work among multiple workers. The whole data and weight vector (that uniquely determine a hyperplane) are both stored in the main server. This choice is justified since we are processing on one computer and every one has access to the same ram. These choices will obviously evolve as we move onto a cluster for the next milestone. 
+For this first milestone, we split the work among multiple workers. The whole data and weight vector (that uniquely determine a hyperplane) are both stored in the main server. This choice is justified since we are processing on one computer and every one has access to the same ram. These choices will obviously evolve as we move onto a cluster for the next milestone.
 
 The server starts by waiting for a given number of client connections. As long as all clients are not connected, the server holds. When all clients have successfully connected, the server blocks further connections and at each iteration each worker receives a batch of data, alongside its corresponding labels and the current weight vector. Then, each worker node computes the gradient of the sample(s) it has just received using `mini_batch_update`  and sends the result back to the server. The server waits for each worker's answer and then update the weight vector by summing all the gradients received. Once the weight vector is updated, the iteration can start again.
 
