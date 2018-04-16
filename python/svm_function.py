@@ -1,4 +1,9 @@
 from functools import reduce
+"""
+This helper file contains everything related to
+SGD and SVM computations. Simply import the file
+and use the functions with their defined arguments.
+"""
 
 multiply = lambda item: item[0]*item[1]
 add_all = lambda y, z: y + z
@@ -12,16 +17,6 @@ def contains_CCAT(item):
     else:
         return (item[0], -1)
 
-# To test this:
-"""
-labels = dict([ contains_CCAT(tup) for tup in data.load_labels().items()])
-weights = [ random.random() for _ in range(48000) ]
-samples = next(data.get_batch(20))
-
-print(calculate_loss(labels, samples, weights))
-print(gradient_update(labels[26151],samples[26151], weights))
-print(is_support(labels[26151],samples[26151], weights))
-"""
 def calculate_loss(labels, samples, weights):
     """
     Compute loss objective function of Support Vector Machine
