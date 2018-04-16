@@ -38,7 +38,7 @@ def calculate_loss(labels, samples, weights):
     sample_ids = list(weighted_sum_samples.keys())
     label_weighted_sum = [(labels[i], weighted_sum_samples[i]) for i in sample_ids]
     # computing the hinge loss for each sample and summing
-    hinge_loss_by_sample = map(lambda arg: max(0, 1-arg[0]*arg[1]), label_weighted_s)
+    hinge_loss_by_sample = map(lambda arg: max(0, 1-arg[0]*arg[1]), label_weighted_sum)
     return reduce(add_all, hinge_loss_by_sample)/len(samples)
 
 def calculate_accuracy(labels, samples, weights):
