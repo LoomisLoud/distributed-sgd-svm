@@ -32,13 +32,20 @@ class Client(object):
             - weights as a string json
         """
         return self.stub.getDataLabels(sgd_svm_pb2.Auth(id=self.id))
-
+    
     def sendGradientUpdateToServer(self, grad_update):
         """
         Sends the computed updated gradient
         """
         updated_gradient = sgd_svm_pb2.GradientUpdate(gradient_update_json=json.dumps(grad_update), id=self.id)
         return self.stub.sendGradientUpdate(updated_gradient)
+    
+    def sendEvalUpdateToServer(self, train_loss_update, test_loss_update):
+        """
+            Sends the computed updated gradient
+            """
+        updated_eval = sgd_svm_pb2.EvalUpdate(train_loss_update=train_loss_update, test_loss_update=test_loss_update ,id=self.id)
+        return self.stub.sendEvalUpdate(updated_eval)
 
     def sendDoneComputingToServer(self):
         """
@@ -91,10 +98,23 @@ class Client(object):
             samples = json.loads(response.samples_json)
             labels = json.loads(response.labels_json)
             weights = json.loads(response.weights_json)
-
-            loss = svm_function.calculate_loss(labels, samples, weights)
-            print("Loss on clients: {:.6f}".format(loss), end="\r")
-            grad_update = svm_function.mini_batch_update(samples, labels, weights)
+            
+            # split the received data between test and train set with ratio 1:30
+            split_ = int(len(samples)/30)
+            samples_train = dict(list(samples.items())[:split_])
+            samples_test = dict(list(samples.items())[split_:])
+            
+            # separately compute train and test losses
+            train_loss = svm_function.calculate_loss(labels, samples_train, weights)
+            test_loss = svm_function.calculate_loss(labels, samples_test, weights)
+            
+            print("train loss on clients: {:.6f}".format(train_loss), end="\r")
+            grad_update = svm_function.mini_batch_update(samples_train, labels, weights)
+            
+            # send back train/test losses
+            self.sendEvalUpdateToServer(train_loss, test_loss)
+            
+            # send back train gardient update
             self.sendGradientUpdateToServer(grad_update)
 
 if __name__ == '__main__':

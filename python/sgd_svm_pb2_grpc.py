@@ -29,6 +29,11 @@ class SGDSVMStub(object):
         request_serializer=sgd__svm__pb2.GradientUpdate.SerializeToString,
         response_deserializer=sgd__svm__pb2.Empty.FromString,
         )
+    self.sendEvalUpdate = channel.unary_unary(
+        '/sgdsvm.SGDSVM/sendEvalUpdate',
+        request_serializer=sgd__svm__pb2.EvalUpdate.SerializeToString,
+        response_deserializer=sgd__svm__pb2.Empty.FromString,
+        )
     self.sendDoneComputing = channel.unary_unary(
         '/sgdsvm.SGDSVM/sendDoneComputing',
         request_serializer=sgd__svm__pb2.Auth.SerializeToString,
@@ -63,6 +68,14 @@ class SGDSVMServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def sendEvalUpdate(self, request, context):
+    """Sends the computed evaluation update to the server
+    ???????????
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def sendDoneComputing(self, request, context):
     """Tells the server that the client is done computing
     for the current job
@@ -87,6 +100,11 @@ def add_SGDSVMServicer_to_server(servicer, server):
       'sendGradientUpdate': grpc.unary_unary_rpc_method_handler(
           servicer.sendGradientUpdate,
           request_deserializer=sgd__svm__pb2.GradientUpdate.FromString,
+          response_serializer=sgd__svm__pb2.Empty.SerializeToString,
+      ),
+      'sendEvalUpdate': grpc.unary_unary_rpc_method_handler(
+          servicer.sendEvalUpdate,
+          request_deserializer=sgd__svm__pb2.EvalUpdate.FromString,
           response_serializer=sgd__svm__pb2.Empty.SerializeToString,
       ),
       'sendDoneComputing': grpc.unary_unary_rpc_method_handler(

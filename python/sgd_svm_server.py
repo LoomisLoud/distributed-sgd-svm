@@ -17,7 +17,7 @@ _NUM_TOTAL_CLIENTS = int(sys.argv[-1])
 _NUM_FEATURES = 47236
 _NUM_SAMPLES = 781265
 _LEARNING_RATE = 0.05
-_MINI_BATCH_SIZE = 10
+_MINI_BATCH_SIZE = 60
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """
@@ -50,7 +50,15 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         self.weights = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
         self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
         self.gradients_received = []
+        
+        self.train_loss_received = []
+        self.train_loss = 0
+        self.test_loss_received = []
+        self.test_loss = 0
+    
+        self.current_sample = 0
 
+    
     def waitOnAllClientConnections(self):
         """
         This function forces the nodes to sleep at the start of the very
@@ -85,6 +93,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             # Lock the iterator to prevent concurrent access
             with self.lock:
                 samples = next(self.data)
+                self.current_sample += len(samples)
         except StopIteration:
             # No more data, return and empty message
             return sgd_svm_pb2.Empty()
@@ -109,11 +118,39 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
                 if len(self.gradients_received) == self.total_clients:
                     # update the weights if we are done with the current iteration
                     self.weights[weight_id] -= _LEARNING_RATE*self.weights_cumulator[weight_id]
+    
         # if we are done with the current iteration,
         # reset the cumulator of weights, and waiting list
         if len(self.gradients_received) == self.total_clients:
             self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
             self.gradients_received = []
+        return sgd_svm_pb2.Empty()
+
+    def sendEvalUpdate(self, request, context):
+        """
+        Retrieves the updated loss from all workers,
+        average them. If we receive the last loss update,
+        save it for plot later, reset the
+        loss accumulator and the waiting list of workers
+        """
+        train_loss_update = request.train_loss_update
+        test_loss_update = request.test_loss_update
+        
+        self.train_loss += train_loss_update
+        self.test_loss += test_loss_update
+        
+        if len(self.gradients_received) == self.total_clients-1:
+        # save average loss among losses received from all workers
+        # for test & train
+            self.train_loss_received.append(self.train_loss/self.total_clients)
+            self.test_loss_received.append(self.test_loss/self.total_clients)
+            print( self.current_sample," train loss on server: ", self.train_loss_received[-1], end='\r')
+
+        # if we are done with the current iteration,
+        # reset the cumulator of weights
+        if len(self.gradients_received) == self.total_clients-1:
+            self.train_loss=0
+            self.test_loss=0
         return sgd_svm_pb2.Empty()
 
     def sendDoneComputing(self, request, context):
@@ -133,7 +170,9 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             samples = data.load_test_set()
             labels = {key:self.labels[key] for key in samples.keys()}
             accuracy = svm_function.calculate_accuracy(labels, samples, self.weights)
+            a = svm_function.plot_history(self.train_loss_received, self.test_loss_received, 'train vs test')
             print("Computed accuracy: {:.2f}%".format(accuracy*100))
+        
 
         return sgd_svm_pb2.Empty()
 
@@ -176,3 +215,4 @@ def serve(clients):
 
 if __name__ == '__main__':
     serve(clients=_NUM_TOTAL_CLIENTS)
+

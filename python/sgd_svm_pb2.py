@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='sgd_svm.proto',
   package='sgdsvm',
   syntax='proto3',
-  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"G\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\x12\x14\n\x0cweights_json\x18\x03 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x07\n\x05\x45mpty2\xd1\x01\n\x06SGDSVM\x12-\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x32\n\x11sendDoneComputing\x12\x0c.sgdsvm.Auth\x1a\r.sgdsvm.Empty\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"M\n\nEvalUpdate\x12\x19\n\x11train_loss_update\x18\x01 \x01(\x01\x12\x18\n\x10test_loss_update\x18\x02 \x01(\x01\x12\n\n\x02id\x18\x03 \x01(\x05\"G\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\x12\x14\n\x0cweights_json\x18\x03 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x07\n\x05\x45mpty2\x88\x02\n\x06SGDSVM\x12-\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x35\n\x0esendEvalUpdate\x12\x12.sgdsvm.EvalUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x32\n\x11sendDoneComputing\x12\x0c.sgdsvm.Auth\x1a\r.sgdsvm.Empty\"\x00\x62\x06proto3')
 )
 
 
@@ -63,6 +63,51 @@ _GRADIENTUPDATE = _descriptor.Descriptor(
 )
 
 
+_EVALUPDATE = _descriptor.Descriptor(
+  name='EvalUpdate',
+  full_name='sgdsvm.EvalUpdate',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='train_loss_update', full_name='sgdsvm.EvalUpdate.train_loss_update', index=0,
+      number=1, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='test_loss_update', full_name='sgdsvm.EvalUpdate.test_loss_update', index=1,
+      number=2, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='id', full_name='sgdsvm.EvalUpdate.id', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=85,
+  serialized_end=162,
+)
+
+
 _DATA = _descriptor.Descriptor(
   name='Data',
   full_name='sgdsvm.Data',
@@ -103,8 +148,8 @@ _DATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=85,
-  serialized_end=156,
+  serialized_start=164,
+  serialized_end=235,
 )
 
 
@@ -134,8 +179,8 @@ _AUTH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=158,
-  serialized_end=176,
+  serialized_start=237,
+  serialized_end=255,
 )
 
 
@@ -158,11 +203,12 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=178,
-  serialized_end=185,
+  serialized_start=257,
+  serialized_end=264,
 )
 
 DESCRIPTOR.message_types_by_name['GradientUpdate'] = _GRADIENTUPDATE
+DESCRIPTOR.message_types_by_name['EvalUpdate'] = _EVALUPDATE
 DESCRIPTOR.message_types_by_name['Data'] = _DATA
 DESCRIPTOR.message_types_by_name['Auth'] = _AUTH
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
@@ -174,6 +220,13 @@ GradientUpdate = _reflection.GeneratedProtocolMessageType('GradientUpdate', (_me
   # @@protoc_insertion_point(class_scope:sgdsvm.GradientUpdate)
   ))
 _sym_db.RegisterMessage(GradientUpdate)
+
+EvalUpdate = _reflection.GeneratedProtocolMessageType('EvalUpdate', (_message.Message,), dict(
+  DESCRIPTOR = _EVALUPDATE,
+  __module__ = 'sgd_svm_pb2'
+  # @@protoc_insertion_point(class_scope:sgdsvm.EvalUpdate)
+  ))
+_sym_db.RegisterMessage(EvalUpdate)
 
 Data = _reflection.GeneratedProtocolMessageType('Data', (_message.Message,), dict(
   DESCRIPTOR = _DATA,
@@ -204,8 +257,8 @@ _SGDSVM = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=188,
-  serialized_end=397,
+  serialized_start=267,
+  serialized_end=531,
   methods=[
   _descriptor.MethodDescriptor(
     name='getDataLabels',
@@ -235,9 +288,18 @@ _SGDSVM = _descriptor.ServiceDescriptor(
     options=None,
   ),
   _descriptor.MethodDescriptor(
+    name='sendEvalUpdate',
+    full_name='sgdsvm.SGDSVM.sendEvalUpdate',
+    index=3,
+    containing_service=None,
+    input_type=_EVALUPDATE,
+    output_type=_EMPTY,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
     name='sendDoneComputing',
     full_name='sgdsvm.SGDSVM.sendDoneComputing',
-    index=3,
+    index=4,
     containing_service=None,
     input_type=_AUTH,
     output_type=_EMPTY,

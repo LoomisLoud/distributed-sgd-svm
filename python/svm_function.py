@@ -1,4 +1,5 @@
 from functools import reduce
+import matplotlib.pyplot as plt
 """
 This helper file contains everything related to
 SGD and SVM computations. Simply import the file
@@ -19,6 +20,29 @@ def contains_CCAT(item):
         return (item[0], 1)
     else:
         return (item[0], -1)
+
+def prepare_standardplot(title, xlabel, logscale):
+    """
+    Initialize plots
+    """
+    fig, ax1 = plt.subplots()
+    fig.suptitle(title)
+    ax1.set_ylabel('hinge loss')
+    ax1.set_xlabel(xlabel)
+    if logscale: ax1.set_yscale('log')
+    return fig, ax1
+
+def plot_history(train,test,title):
+    """
+    Plots learning curves
+    train & test, list
+    """
+    fig, ax1 = prepare_standardplot(title, 'epoch', logscale = False)
+    ax1.plot(train, label = "training", 'b')
+    ax1.plot(test, label = "validation", 'r')
+    ax1.legend()
+    plt.savefig(str(title)+'.png')
+    return 0
 
 def calculate_loss(labels, samples, weights):
     """

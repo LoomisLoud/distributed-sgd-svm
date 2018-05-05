@@ -15,6 +15,10 @@ service SGDSVM{
   // Sends the computed gradient update to the server
   rpc sendGradientUpdate(GradientUpdate) returns (Empty) {}
 
+  // Sends the computed evaluation update to the server
+  //  ???????????
+  rpc sendEvalUpdate(EvalUpdate) returns (Empty) {}
+
   // Tells the server that the client is done computing
   // for the current job
   rpc sendDoneComputing(Auth) returns (Empty) {}
@@ -26,6 +30,17 @@ service SGDSVM{
 message GradientUpdate {
   string gradient_update_json = 1;
   int32 id = 2;
+}
+
+// Evaluation (loss + acc) computed composed of:
+
+//  - double -> loss_update
+//  - double ->  acc_update
+//  - id of the client sending the update
+message EvalUpdate {
+double train_loss_update = 1;
+double test_loss_update = 2;
+int32 id = 3;
 }
 
 // The data sent by the server for the

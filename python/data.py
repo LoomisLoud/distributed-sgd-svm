@@ -39,7 +39,7 @@ def get_batch(batch_size=1):
     """
     batch = {}
     counter = 0
-    with open("../data/data") as f:
+    with open("../data/train_set") as f:
         for sample in f:
             # count the samples to send only a modulo
             # of the batch size asked by the user
