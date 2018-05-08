@@ -4,9 +4,9 @@ package sgdsvm;
 
 // Interface exported by the server.
 service SGDSVM{
-  // Asks the server for data, labels and weights
-  // if the client is authorized, server answers with the data
-  rpc getDataLabels(Auth) returns (Data) {}
+  // Asks the server for data and labels
+  // if the client is authorized, server answers
+  rpc getDataLabels(Auth) returns (stream Data) {}
 
   // Authenticating to the server, succeeds
   // if the server can still accept connections
@@ -15,13 +15,18 @@ service SGDSVM{
   // Sends the computed gradient update to the server
   rpc sendGradientUpdate(GradientUpdate) returns (Empty) {}
 
+  // Asks the new weights from the server
+  rpc getWeights(Auth) returns (Weights) {}
+
   // Sends the computed evaluation update to the server
-  //  ???????????
   rpc sendEvalUpdate(EvalUpdate) returns (Empty) {}
 
   // Tells the server that the client is done computing
   // for the current job
   rpc sendDoneComputing(Auth) returns (Empty) {}
+
+  // Asks the server if the client should wait or not
+  rpc shouldWaitSynchronousOrNot(Auth) returns (Answer) {}
 }
 
 // Gradient computed composed of:
@@ -32,15 +37,21 @@ message GradientUpdate {
   int32 id = 2;
 }
 
+// Weights computed composed of:
+//  - json of weights
+message Weights {
+  string weights = 1;
+}
+
 // Evaluation (loss + acc) computed composed of:
 
 //  - double -> loss_update
 //  - double ->  acc_update
 //  - id of the client sending the update
 message EvalUpdate {
-double train_loss_update = 1;
-double test_loss_update = 2;
-int32 id = 3;
+  double train_loss_update = 1;
+  double test_loss_update = 2;
+  int32 id = 3;
 }
 
 // The data sent by the server for the
@@ -51,7 +62,6 @@ int32 id = 3;
 message Data {
   string samples_json = 1;
   string labels_json = 2;
-  string weights_json = 3;
 }
 
 // The authentication message the client
@@ -59,6 +69,13 @@ message Data {
 //  - id of the client
 message Auth {
   int32 id = 1;
+}
+
+// A boolean answer to a question,
+// composed of:
+//  - answer as a boolean
+message Answer {
+  bool answer = 1;
 }
 
 // An empty message, default behavior

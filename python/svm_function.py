@@ -29,7 +29,8 @@ def prepare_standardplot(title, xlabel, logscale):
     fig.suptitle(title)
     ax1.set_ylabel('hinge loss')
     ax1.set_xlabel(xlabel)
-    if logscale: ax1.set_yscale('log')
+    if logscale:
+        ax1.set_yscale('log')
     return fig, ax1
 
 def plot_history(train,test,title):
@@ -37,12 +38,11 @@ def plot_history(train,test,title):
     Plots learning curves
     train & test, list
     """
-    fig, ax1 = prepare_standardplot(title, 'epoch', logscale = False)
-    ax1.plot(train, label = "training", 'b')
-    ax1.plot(test, label = "validation", 'r')
+    fig, ax1 = prepare_standardplot(title, 'epoch', logscale=False)
+    ax1.plot(train, 'b', label="training")
+    ax1.plot(test, 'r', label="validation")
     ax1.legend()
     plt.savefig(str(title)+'.png')
-    return 0
 
 def calculate_loss(labels, samples, weights):
     """

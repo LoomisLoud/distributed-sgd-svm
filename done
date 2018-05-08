@@ -1,8 +1,0 @@
-virtualenv -p /usr/bin/python3.6 env
-pip3 install grpcio
-pip3 install grpcio-tools
-git clone -b v1.10.x https://github.com/grpc/grpc
-
-# lets play
-# -I{folderOfProtoFile}
-python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. sgd_svm.proto

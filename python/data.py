@@ -8,6 +8,16 @@ is quite costly. This is why the get_batch function
 defines an iterator on which we can query for samples
 """
 
+import itertools
+
+def grouper(n, iterable):
+    it = iter(iterable)
+    while True:
+       chunk = tuple(itertools.islice(it, n))
+       if not chunk:
+           return
+       yield chunk
+
 def load_labels():
     """
     Loads the labels from disk into a dict
@@ -39,7 +49,7 @@ def get_batch(batch_size=1):
     """
     batch = {}
     counter = 0
-    with open("../data/train_set") as f:
+    with open("../data/data") as f:
         for sample in f:
             # count the samples to send only a modulo
             # of the batch size asked by the user
@@ -69,3 +79,12 @@ def load_test_set():
             sample_id = sample[0]
             test_set[sample_id] = dict(sample_labels)
     return test_set
+
+def get_data_size(path="../data/data"):
+    """
+    Counts the number of samples in the given data set
+
+    Returns:
+        - number of samples
+    """
+    return sum(1 for line in open(path))

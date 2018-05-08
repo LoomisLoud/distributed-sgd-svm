@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='sgd_svm.proto',
   package='sgdsvm',
   syntax='proto3',
-  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"M\n\nEvalUpdate\x12\x19\n\x11train_loss_update\x18\x01 \x01(\x01\x12\x18\n\x10test_loss_update\x18\x02 \x01(\x01\x12\n\n\x02id\x18\x03 \x01(\x05\"G\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\x12\x14\n\x0cweights_json\x18\x03 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x07\n\x05\x45mpty2\x88\x02\n\x06SGDSVM\x12-\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x35\n\x0esendEvalUpdate\x12\x12.sgdsvm.EvalUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x32\n\x11sendDoneComputing\x12\x0c.sgdsvm.Auth\x1a\r.sgdsvm.Empty\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\rsgd_svm.proto\x12\x06sgdsvm\":\n\x0eGradientUpdate\x12\x1c\n\x14gradient_update_json\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\x05\"\x1a\n\x07Weights\x12\x0f\n\x07weights\x18\x01 \x01(\t\"M\n\nEvalUpdate\x12\x19\n\x11train_loss_update\x18\x01 \x01(\x01\x12\x18\n\x10test_loss_update\x18\x02 \x01(\x01\x12\n\n\x02id\x18\x03 \x01(\x05\"1\n\x04\x44\x61ta\x12\x14\n\x0csamples_json\x18\x01 \x01(\t\x12\x13\n\x0blabels_json\x18\x02 \x01(\t\"\x12\n\x04\x41uth\x12\n\n\x02id\x18\x01 \x01(\x05\"\x18\n\x06\x41nswer\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\x08\"\x07\n\x05\x45mpty2\xf7\x02\n\x06SGDSVM\x12/\n\rgetDataLabels\x12\x0c.sgdsvm.Auth\x1a\x0c.sgdsvm.Data\"\x00\x30\x01\x12%\n\x04\x61uth\x12\r.sgdsvm.Empty\x1a\x0c.sgdsvm.Auth\"\x00\x12=\n\x12sendGradientUpdate\x12\x16.sgdsvm.GradientUpdate\x1a\r.sgdsvm.Empty\"\x00\x12-\n\ngetWeights\x12\x0c.sgdsvm.Auth\x1a\x0f.sgdsvm.Weights\"\x00\x12\x35\n\x0esendEvalUpdate\x12\x12.sgdsvm.EvalUpdate\x1a\r.sgdsvm.Empty\"\x00\x12\x32\n\x11sendDoneComputing\x12\x0c.sgdsvm.Auth\x1a\r.sgdsvm.Empty\"\x00\x12<\n\x1ashouldWaitSynchronousOrNot\x12\x0c.sgdsvm.Auth\x1a\x0e.sgdsvm.Answer\"\x00\x62\x06proto3')
 )
 
 
@@ -63,6 +63,37 @@ _GRADIENTUPDATE = _descriptor.Descriptor(
 )
 
 
+_WEIGHTS = _descriptor.Descriptor(
+  name='Weights',
+  full_name='sgdsvm.Weights',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='weights', full_name='sgdsvm.Weights.weights', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=85,
+  serialized_end=111,
+)
+
+
 _EVALUPDATE = _descriptor.Descriptor(
   name='EvalUpdate',
   full_name='sgdsvm.EvalUpdate',
@@ -103,8 +134,8 @@ _EVALUPDATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=85,
-  serialized_end=162,
+  serialized_start=113,
+  serialized_end=190,
 )
 
 
@@ -129,13 +160,6 @@ _DATA = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='weights_json', full_name='sgdsvm.Data.weights_json', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -148,8 +172,8 @@ _DATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=164,
-  serialized_end=235,
+  serialized_start=192,
+  serialized_end=241,
 )
 
 
@@ -179,8 +203,39 @@ _AUTH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=237,
-  serialized_end=255,
+  serialized_start=243,
+  serialized_end=261,
+)
+
+
+_ANSWER = _descriptor.Descriptor(
+  name='Answer',
+  full_name='sgdsvm.Answer',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='answer', full_name='sgdsvm.Answer.answer', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=263,
+  serialized_end=287,
 )
 
 
@@ -203,14 +258,16 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=257,
-  serialized_end=264,
+  serialized_start=289,
+  serialized_end=296,
 )
 
 DESCRIPTOR.message_types_by_name['GradientUpdate'] = _GRADIENTUPDATE
+DESCRIPTOR.message_types_by_name['Weights'] = _WEIGHTS
 DESCRIPTOR.message_types_by_name['EvalUpdate'] = _EVALUPDATE
 DESCRIPTOR.message_types_by_name['Data'] = _DATA
 DESCRIPTOR.message_types_by_name['Auth'] = _AUTH
+DESCRIPTOR.message_types_by_name['Answer'] = _ANSWER
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -220,6 +277,13 @@ GradientUpdate = _reflection.GeneratedProtocolMessageType('GradientUpdate', (_me
   # @@protoc_insertion_point(class_scope:sgdsvm.GradientUpdate)
   ))
 _sym_db.RegisterMessage(GradientUpdate)
+
+Weights = _reflection.GeneratedProtocolMessageType('Weights', (_message.Message,), dict(
+  DESCRIPTOR = _WEIGHTS,
+  __module__ = 'sgd_svm_pb2'
+  # @@protoc_insertion_point(class_scope:sgdsvm.Weights)
+  ))
+_sym_db.RegisterMessage(Weights)
 
 EvalUpdate = _reflection.GeneratedProtocolMessageType('EvalUpdate', (_message.Message,), dict(
   DESCRIPTOR = _EVALUPDATE,
@@ -242,6 +306,13 @@ Auth = _reflection.GeneratedProtocolMessageType('Auth', (_message.Message,), dic
   ))
 _sym_db.RegisterMessage(Auth)
 
+Answer = _reflection.GeneratedProtocolMessageType('Answer', (_message.Message,), dict(
+  DESCRIPTOR = _ANSWER,
+  __module__ = 'sgd_svm_pb2'
+  # @@protoc_insertion_point(class_scope:sgdsvm.Answer)
+  ))
+_sym_db.RegisterMessage(Answer)
+
 Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), dict(
   DESCRIPTOR = _EMPTY,
   __module__ = 'sgd_svm_pb2'
@@ -257,8 +328,8 @@ _SGDSVM = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=267,
-  serialized_end=531,
+  serialized_start=299,
+  serialized_end=674,
   methods=[
   _descriptor.MethodDescriptor(
     name='getDataLabels',
@@ -288,9 +359,18 @@ _SGDSVM = _descriptor.ServiceDescriptor(
     options=None,
   ),
   _descriptor.MethodDescriptor(
+    name='getWeights',
+    full_name='sgdsvm.SGDSVM.getWeights',
+    index=3,
+    containing_service=None,
+    input_type=_AUTH,
+    output_type=_WEIGHTS,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
     name='sendEvalUpdate',
     full_name='sgdsvm.SGDSVM.sendEvalUpdate',
-    index=3,
+    index=4,
     containing_service=None,
     input_type=_EVALUPDATE,
     output_type=_EMPTY,
@@ -299,10 +379,19 @@ _SGDSVM = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='sendDoneComputing',
     full_name='sgdsvm.SGDSVM.sendDoneComputing',
-    index=4,
+    index=5,
     containing_service=None,
     input_type=_AUTH,
     output_type=_EMPTY,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='shouldWaitSynchronousOrNot',
+    full_name='sgdsvm.SGDSVM.shouldWaitSynchronousOrNot',
+    index=6,
+    containing_service=None,
+    input_type=_AUTH,
+    output_type=_ANSWER,
     options=None,
   ),
 ])

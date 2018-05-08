@@ -14,7 +14,7 @@ class SGDSVMStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.getDataLabels = channel.unary_unary(
+    self.getDataLabels = channel.unary_stream(
         '/sgdsvm.SGDSVM/getDataLabels',
         request_serializer=sgd__svm__pb2.Auth.SerializeToString,
         response_deserializer=sgd__svm__pb2.Data.FromString,
@@ -29,6 +29,11 @@ class SGDSVMStub(object):
         request_serializer=sgd__svm__pb2.GradientUpdate.SerializeToString,
         response_deserializer=sgd__svm__pb2.Empty.FromString,
         )
+    self.getWeights = channel.unary_unary(
+        '/sgdsvm.SGDSVM/getWeights',
+        request_serializer=sgd__svm__pb2.Auth.SerializeToString,
+        response_deserializer=sgd__svm__pb2.Weights.FromString,
+        )
     self.sendEvalUpdate = channel.unary_unary(
         '/sgdsvm.SGDSVM/sendEvalUpdate',
         request_serializer=sgd__svm__pb2.EvalUpdate.SerializeToString,
@@ -39,6 +44,11 @@ class SGDSVMStub(object):
         request_serializer=sgd__svm__pb2.Auth.SerializeToString,
         response_deserializer=sgd__svm__pb2.Empty.FromString,
         )
+    self.shouldWaitSynchronousOrNot = channel.unary_unary(
+        '/sgdsvm.SGDSVM/shouldWaitSynchronousOrNot',
+        request_serializer=sgd__svm__pb2.Auth.SerializeToString,
+        response_deserializer=sgd__svm__pb2.Answer.FromString,
+        )
 
 
 class SGDSVMServicer(object):
@@ -46,8 +56,8 @@ class SGDSVMServicer(object):
   """
 
   def getDataLabels(self, request, context):
-    """Asks the server for data, labels and weights
-    if the client is authorized, server answers with the data
+    """Asks the server for data and labels
+    if the client is authorized, server answers
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
@@ -68,9 +78,15 @@ class SGDSVMServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def getWeights(self, request, context):
+    """Asks the new weights from the server
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def sendEvalUpdate(self, request, context):
     """Sends the computed evaluation update to the server
-    ???????????
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
@@ -84,10 +100,17 @@ class SGDSVMServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def shouldWaitSynchronousOrNot(self, request, context):
+    """Asks the server if the client should wait or not
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_SGDSVMServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'getDataLabels': grpc.unary_unary_rpc_method_handler(
+      'getDataLabels': grpc.unary_stream_rpc_method_handler(
           servicer.getDataLabels,
           request_deserializer=sgd__svm__pb2.Auth.FromString,
           response_serializer=sgd__svm__pb2.Data.SerializeToString,
@@ -102,6 +125,11 @@ def add_SGDSVMServicer_to_server(servicer, server):
           request_deserializer=sgd__svm__pb2.GradientUpdate.FromString,
           response_serializer=sgd__svm__pb2.Empty.SerializeToString,
       ),
+      'getWeights': grpc.unary_unary_rpc_method_handler(
+          servicer.getWeights,
+          request_deserializer=sgd__svm__pb2.Auth.FromString,
+          response_serializer=sgd__svm__pb2.Weights.SerializeToString,
+      ),
       'sendEvalUpdate': grpc.unary_unary_rpc_method_handler(
           servicer.sendEvalUpdate,
           request_deserializer=sgd__svm__pb2.EvalUpdate.FromString,
@@ -111,6 +139,11 @@ def add_SGDSVMServicer_to_server(servicer, server):
           servicer.sendDoneComputing,
           request_deserializer=sgd__svm__pb2.Auth.FromString,
           response_serializer=sgd__svm__pb2.Empty.SerializeToString,
+      ),
+      'shouldWaitSynchronousOrNot': grpc.unary_unary_rpc_method_handler(
+          servicer.shouldWaitSynchronousOrNot,
+          request_deserializer=sgd__svm__pb2.Auth.FromString,
+          response_serializer=sgd__svm__pb2.Answer.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
