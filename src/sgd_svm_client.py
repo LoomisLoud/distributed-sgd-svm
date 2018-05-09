@@ -10,9 +10,9 @@ import sgd_svm_pb2_grpc
 
 _NUM_FEATURES = 47236
 _LEARNING_RATE = 0.05
-_TEST_TO_TRAIN_RATIO = 2
-_MINI_BATCH_SIZE = 5
-_ASYNCHRONOUS = False
+_TEST_TO_TRAIN_RATIO = 30
+_MINI_BATCH_SIZE = 2
+_ASYNCHRONOUS = True
 
 class Client(object):
     """
@@ -31,6 +31,7 @@ class Client(object):
         self.test_set = iter([])
         self.labels = {}
         self.weights = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
+        self.last_weights_update = {}
         self.id = -1
 
     def getDataFromServer(self):
@@ -150,11 +151,19 @@ class Client(object):
             # send back train gardient update
             self.sendGradientUpdateToServer(grad_update)
 
-            if not _ASYNCHRONOUS:
+            if _ASYNCHRONOUS:
+                response = self.getWeightsToServer()
+                received_weights = json.loads(response.weights)
+                if received_weights != self.last_weights_update:
+                    self.last_weights_update = received_weights
+                    for weight_id in received_weights:
+                        self.weights[weight_id] -= _LEARNING_RATE*received_weights[weight_id]
+            else:
                 while self.shouldWaitSynchronousOrNotToServer().answer:
                     time.sleep(0.0000000000001)
                 response = self.getWeightsToServer()
                 received_weights = json.loads(response.weights)
+                self.last_weights_update = received_weights
                 for weight_id in received_weights:
                     self.weights[weight_id] -= _LEARNING_RATE*received_weights[weight_id]
 

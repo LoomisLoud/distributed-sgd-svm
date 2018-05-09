@@ -18,7 +18,6 @@ _NUM_FEATURES = 47236
 _NUM_SAMPLES = 781265
 _LEARNING_RATE = 0.05
 _MINI_BATCH_SIZE = 60
-_ASYNCHRONOUS = False
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """
@@ -173,7 +172,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             print("Computing accuracy...")
             # Print the loss/accuracy ?
             # Resetting the batch if we want to run again
-            #self.data.get_batch(floor(data.get_data_size() / nb_clients))
+            self.data = data.get_batch(floor(data.get_data_size() / self.total_clients))
 
             # Computing accuracy
             samples = data.load_test_set()
