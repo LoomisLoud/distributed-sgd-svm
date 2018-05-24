@@ -1,5 +1,5 @@
 from functools import reduce
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 """
 This helper file contains everything related to
 SGD and SVM computations. Simply import the file

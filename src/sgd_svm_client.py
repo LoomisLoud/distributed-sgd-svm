@@ -1,6 +1,7 @@
-import grpc
 import data
+import grpc
 import json
+import os
 import random
 import svm_function
 import time
@@ -8,11 +9,13 @@ import time
 import sgd_svm_pb2
 import sgd_svm_pb2_grpc
 
+# Loading up the configuration
 _NUM_FEATURES = 47236
-_LEARNING_RATE = 0.05
-_TEST_TO_TRAIN_RATIO = 30
-_MINI_BATCH_SIZE = 2
-_ASYNCHRONOUS = True
+_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+_TEST_TO_TRAIN_RATIO = int(os.environ['TEST_TO_TRAIN_RATIO'])
+_MINI_BATCH_SIZE = int(os.environ['MINI_BATCH_SIZE'])
+_ASYNCHRONOUS = os.environ['ASYNCHRONOUS'] in ["True","yes","true","y"]
+_SERVER_URL = "server-0.hog-service:50051"
 
 class Client(object):
     """
@@ -20,7 +23,7 @@ class Client(object):
     data, to then compute an update for the weights and
     send it back to the server
     """
-    def __init__(self, channel=grpc.insecure_channel('localhost:50051')):
+    def __init__(self, channel=grpc.insecure_channel(_SERVER_URL)):
         """
         Initializes the client object with the server stub, and initial
         values (not connected, and no id given by the server)
@@ -111,7 +114,7 @@ class Client(object):
         will iterate over them to compute updates for the gradient,
         and send them back to the aggregator (server)
         """
-        print("\n-------------- Connection to server --------------")
+        print("\n-------------- Connecting to the server --------------")
         # Authenticate
         self.authToServer()
         print("--------------      Connected       --------------")
@@ -122,13 +125,6 @@ class Client(object):
                 assert self.connected, "ERROR: client {} not connected to the server".format(self.id)
             except AssertionError:
                 break
-
-            # building batch
-            #if not response.samples_json:
-            #    print("Client {} disconnecting from server".format(self.id))
-            #    self.sendDoneComputingToServer()
-            #    self.connected = False
-            #    break
 
             # load the data into variables and compute update
             # to send it back.
@@ -142,7 +138,7 @@ class Client(object):
             train_loss = svm_function.calculate_loss(self.labels, train_batch, self.weights)
             test_loss = svm_function.calculate_loss(self.labels, test_batch, self.weights)
 
-            #print("train loss on clients: {:.6f}".format(train_loss), end="\r")
+            print("train loss on client: {:.6f}".format(train_loss))
             grad_update = svm_function.mini_batch_update(train_batch, self.labels, self.weights)
 
             # send back train/test losses
@@ -171,5 +167,13 @@ class Client(object):
 
 if __name__ == '__main__':
     # Run the client
-    client = Client()
-    client.work()
+    while True:
+        try:
+            client = Client()
+            client.work()
+        except:
+            time.sleep(1)
+            continue
+        else:
+            break
+    time.sleep(1000)

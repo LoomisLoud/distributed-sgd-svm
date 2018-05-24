@@ -1,0 +1,15 @@
+FROM python:3.6-slim
+
+RUN mkdir -p /usr/src/app && pip install --upgrade pip
+WORKDIR /usr/src/app
+
+COPY requirements.txt src/ /usr/src/app/
+
+# Client dockerfile does not get access to the data
+RUN pip install --no-cache-dir -r requirements.txt
+
+# create the grpc files
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. sgd_svm.proto
+
+# Run the command by default
+CMD ["python", "sgd_svm_client.py"]

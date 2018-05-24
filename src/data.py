@@ -26,7 +26,7 @@ def load_labels():
         - key: id of the sample
         - value: list of labels
     """
-    with open("../data/rcv1-v2.topics.qrels") as f:
+    with open("/mnt/datasets/rcv1-v2.topics.qrels", "r") as f:
         data = f.readlines()
     data = map(lambda x: x.split()[:-1], data)
     data_keyed = {}
@@ -49,7 +49,7 @@ def get_batch(batch_size=1):
     """
     batch = {}
     counter = 0
-    with open("../data/data") as f:
+    with open("/mnt/datasets/lyrl2004_vectors_train.dat", "r") as f:
         for sample in f:
             # count the samples to send only a modulo
             # of the batch size asked by the user
@@ -72,19 +72,21 @@ def load_test_set():
         - test set as a dict of samples
     """
     test_set = {}
-    with open("../data/test_set") as f:
-        for sample in f:
-            sample = sample.split()
-            sample_labels = [ (label_id, float(confidence)) for combo in sample[1:] for label_id, confidence in [combo.split(":")] ]
-            sample_id = sample[0]
-            test_set[sample_id] = dict(sample_labels)
+    test_files = ["lyrl2004_vectors_test_pt0.dat", "lyrl2004_vectors_test_pt3.dat", "lyrl2004_vectors_test_pt1.dat", "lyrl2004_vectors_test_pt2.dat"]
+    for test_f in test_files:
+        with open("/mnt/datasets/"+test_f, "r") as f:
+            for sample in f:
+                sample = sample.split()
+                sample_labels = [ (label_id, float(confidence)) for combo in sample[1:] for label_id, confidence in [combo.split(":")] ]
+                sample_id = sample[0]
+                test_set[sample_id] = dict(sample_labels)
     return test_set
 
-def get_data_size(path="../data/data"):
+def get_data_size(path="/mnt/datasets/lyrl2004_vectors_train.dat"):
     """
     Counts the number of samples in the given data set
 
     Returns:
         - number of samples
     """
-    return sum(1 for line in open(path))
+    return sum(1 for line in open(path, "r"))

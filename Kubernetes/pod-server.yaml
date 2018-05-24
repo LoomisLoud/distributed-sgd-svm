@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hog-service
+  labels:
+    app: hog-service
+spec:
+  clusterIP: None
+  ports:
+  - name: access-server
+    port: 50051
+    targetPort: 50051
+    protocol: TCP
+  selector:
+    app: hog-service
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: server
+  labels:
+    app: hog-service
+spec:
+  serviceName: "hog-service"
+  selector:
+    matchLabels:
+      app: hog-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hog-service
+    spec:
+      volumes:
+      - name: dataset-storage
+        persistentVolumeClaim:
+          claimName: cs449g1-scratch
+      imagePullSecrets:
+      - name: icregistersecret
+      containers:
+      - name: grpc-server
+        imagePullPolicy: Always
+        env:
+        - name: CLIENTS
+          value: "$CLIENTS"
+        - name: LEARNING_RATE
+          value: "$LEARNING_RATE"
+        volumeMounts:
+        - mountPath: "/mnt"
+          name: dataset-storage
+        tty: true
+        image: ic-registry.epfl.ch/systems/grpc-server:latest
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "10Gi"
+            cpu: "$CLIENTS"
+        ports:
+        - containerPort: 50051
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: client
+  labels:
+    app: hog-service
+spec:
+  serviceName: "hog-service"
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: hog-service
+  replicas: $CLIENTS
+  template:
+    metadata:
+      labels:
+        app: hog-service
+    spec:
+      imagePullSecrets:
+      - name: icregistersecret
+      containers:
+      - name: grpc-client
+        imagePullPolicy: Always
+        env:
+        - name: LEARNING_RATE
+          value: "$LEARNING_RATE"
+        - name: TEST_TO_TRAIN_RATIO
+          value: "$TEST_TO_TRAIN_RATIO"
+        - name: MINI_BATCH_SIZE
+          value: "$MINI_BATCH_SIZE"
+        - name: ASYNCHRONOUS
+          value: "$ASYNCHRONOUS"
+        tty: true
+        image: ic-registry.epfl.ch/systems/grpc-client:latest
+        resources:
+          requests:
+            memory: "4Mi"
+            cpu: "100m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"

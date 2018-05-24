@@ -3,21 +3,21 @@ from math import floor
 import data
 import grpc
 import json
-import threading
-import time
+import os
 import sgd_svm_pb2
 import sgd_svm_pb2_grpc
 import svm_function
 import sys
+import threading
+import time
 
 # Constants used throughout the code
-_ONE_DAY_IN_SECONDS = 60 * 60 * 24
+_ONE_DAY_IN_SECONDS = 60 * 60 * 2
 # getting the total number of clients through commandline
-_NUM_TOTAL_CLIENTS = int(sys.argv[-1])
 _NUM_FEATURES = 47236
 _NUM_SAMPLES = 781265
-_LEARNING_RATE = 0.05
-_MINI_BATCH_SIZE = 60
+_NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
+_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """
@@ -149,7 +149,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         # for test & train
             self.train_loss_received.append(self.train_loss/self.total_clients)
             self.test_loss_received.append(self.test_loss/self.total_clients)
-            print(self.current_sample," train loss on server: ", self.train_loss_received[-1], end='\r')
+            #print("train loss on server:", self.train_loss_received[-1], end='\r')
 
         # if we are done with the current iteration,
         # reset the cumulator of weights
@@ -183,6 +183,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             #svm_function.plot_history(self.train_loss_received, self.test_loss_received, 'train vs test')
             print("Computed accuracy: {:.2f}%".format(accuracy*100))
 
+
         return sgd_svm_pb2.Empty()
 
     def getWeights(self, request, context):
@@ -214,20 +215,17 @@ def serve(clients):
     Serves the gRPC messaging server, and defines
     how many clients we allow to connect to the server
     """
-    print("Starting the server...")
+    print("Starting the server ...")
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=clients))
     sgd_svm_pb2_grpc.add_SGDSVMServicer_to_server(
         SGDSVM(nb_clients=clients), server)
     server.add_insecure_port('[::]:50051')
     server.start()
     print("Server started")
-    try:
-        while True:
-            time.sleep(_ONE_DAY_IN_SECONDS)
-    except KeyboardInterrupt:
-        server.stop(0)
-        print("Server stopped")
+    # Set for experiments
+    time.sleep(1000)
+    server.stop(0)
+    print("Server stopped")
 
 if __name__ == '__main__':
     serve(clients=_NUM_TOTAL_CLIENTS)
-
