@@ -34,12 +34,19 @@ def prepare_standardplot(title, xlabel, logscale):
     return fig, ax1
 
 def scriteria_to_lrate(stop_cri = 0.001, lag = 0):
+    # Strongly convex modulus
     c = 0.5  
+    # Lipschitz constant
     L = 0.1
+    # Gradient bound
     M = 0.1
+    # maximum number of non-zero features over all samples
     omega = 50
+    # hypergraph param (given by HOGWILD!)
     rho = 0.44
+    # hypergraph param (given by HOGWILD!)
     delta = 1.
+    # phi in (0,1)
     phi = 0.9
     learning_rate = phi*stop_cri*c/(2*L*M*M*omega*(1 + 6*lag*rho + 4*lag*lag*omega*np.sqrt(delta)))
     return learning_rate 
