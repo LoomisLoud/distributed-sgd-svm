@@ -124,7 +124,7 @@ def is_support(label, sample, weights):
     sample_weight = [(sample[i], weights[i]) for i in sample.keys()]
     dot_prod = reduce(add_all , map(multiply , sample_weight))
     return dot_prod*label < 1
-
+    
 def mini_batch_update(batch_, final_labels, weights, lam_ = 0.):
 
     """
@@ -142,31 +142,14 @@ def mini_batch_update(batch_, final_labels, weights, lam_ = 0.):
     a = [(i, batch_[i], final_labels[i]) for i in keys_]
     b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
     filtered_b = [x for x in b if x is not None]
-    if filtered_b:
-        return reduce((lambda x, y: {**x, **y}), filtered_b)
-    else:
-        return { key:0 for key in weights.keys() }
     
-def mini_batch_update_new(batch_, final_labels, weights, lam_ = 0.):
-
-    """
-    Function that returns the gradient update given multiple samples
-    If the sample is not in the support, don't update the gradient (None) for this specific sample
-    Args:
-        batch_: dict{sample_id : dict{feat_id : val}}
-        final labels: dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
-        weights: dict{feat_id : val}: shape = (num_features)
-
-    Returns:
-        dict(feat_id: update): the gradient update
-    """
-    keys_ = list(batch_.keys())
-    a = [(i, batch_[i], final_labels[i]) for i in keys_]
-    b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
-    filtered_b = [x for x in b if x is not None]
-    if filtered_b:
+    if filterd_b and lam_==0:
+        return reduce((lambda x, y: {**x, **y}), filtered_b)
+    
+    elif filtered_b and lam_!=0:
         c = reduce((lambda x, y: {**x, **y}), filtered_b)
-        d = [(c[i], weights[i]) for i in keys_]
-        return reduce(lambda y: y[0]+y[1] , list(map(lambda y: y[0]+y[1],d)))
+        feats_ = list(c.keys())
+        d = [(i, c[i], lam_*weights[i]) for i in feats_]
+        return reduce((lambda x, y: {**x, **y}), map(lambda y: {y[0]: y[1]+y[2]} , d))
     else:
         return { key:0 for key in weights.keys() }
