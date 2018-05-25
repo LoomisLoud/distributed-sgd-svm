@@ -33,6 +33,17 @@ def prepare_standardplot(title, xlabel, logscale):
         ax1.set_yscale('log')
     return fig, ax1
 
+def scriteria_to_lrate(stop_cri = 0.001, lag = 0):
+    c = 0.5  
+    L = 0.1
+    M = 0.1
+    omega = 50
+    rho = 0.44
+    delta = 1.
+    phi = 0.9
+    learning_rate = phi*stop_cri*c/(2*L*M*M*omega*(1 + 6*lag*rho + 4*lag*lag*omega*np.sqrt(delta)))
+    return learning_rate 
+
 def plot_history(train,test,title):
     """
     Plots learning curves
@@ -107,7 +118,7 @@ def is_support(label, sample, weights):
     dot_prod = reduce(add_all , map(multiply , sample_weight))
     return dot_prod*label < 1
 
-def mini_batch_update(batch_, final_labels, weights):
+def mini_batch_update(batch_, final_labels, weights, lam_ = 0.):
 
     """
     Function that returns the gradient update given multiple samples
@@ -126,5 +137,29 @@ def mini_batch_update(batch_, final_labels, weights):
     filtered_b = [x for x in b if x is not None]
     if filtered_b:
         return reduce((lambda x, y: {**x, **y}), filtered_b)
+    else:
+        return { key:0 for key in weights.keys() }
+    
+def mini_batch_update_new(batch_, final_labels, weights, lam_ = 0.):
+
+    """
+    Function that returns the gradient update given multiple samples
+    If the sample is not in the support, don't update the gradient (None) for this specific sample
+    Args:
+        batch_: dict{sample_id : dict{feat_id : val}}
+        final labels: dict{sample_id : label}: +1 or -1 labels. shape = (num_sample)
+        weights: dict{feat_id : val}: shape = (num_features)
+
+    Returns:
+        dict(feat_id: update): the gradient update
+    """
+    keys_ = list(batch_.keys())
+    a = [(i, batch_[i], final_labels[i]) for i in keys_]
+    b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
+    filtered_b = [x for x in b if x is not None]
+    if filtered_b:
+        c = reduce((lambda x, y: {**x, **y}), filtered_b)
+        d = [(c[i], weights[i]) for i in keys_]
+        return reduce(lambda y: y[0]+y[1] , list(map(lambda y: y[0]+y[1],d)))
     else:
         return { key:0 for key in weights.keys() }
