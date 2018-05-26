@@ -33,6 +33,24 @@ def prepare_standardplot(title, xlabel, logscale):
         ax1.set_yscale('log')
     return fig, ax1
 
+def scriteria_to_lrate(stop_cri = 0.001, lag = 0):
+    # Strongly convex modulus
+    c = 0.5  
+    # Lipschitz constant
+    L = 0.1
+    # Gradient bound
+    M = 0.1
+    # maximum number of non-zero features over all samples
+    omega = 50
+    # hypergraph param (given by HOGWILD!)
+    rho = 0.44
+    # hypergraph param (given by HOGWILD!)
+    delta = 1.
+    # phi in (0,1)
+    phi = 0.9
+    learning_rate = phi*stop_cri*c/(2*L*M*M*omega*(1 + 6*lag*rho + 4*lag*lag*omega*np.sqrt(delta)))
+    return learning_rate 
+
 def plot_history(train,test,title):
     """
     Plots learning curves
@@ -101,8 +119,8 @@ def is_support(label, sample, weights):
     sample_weight = [(sample[i], weights[i]) for i in sample.keys()]
     dot_prod = reduce(add_all , map(multiply , sample_weight))
     return dot_prod*label < 1
-
-def mini_batch_update(batch_, final_labels, weights):
+    
+def mini_batch_update(batch_, final_labels, weights, lam_ = 0.):
 
     """
     Function that returns the gradient update given multiple samples
@@ -119,7 +137,14 @@ def mini_batch_update(batch_, final_labels, weights):
     a = [(i, batch_[i], final_labels[i]) for i in keys_]
     b = list(map(lambda item: {k: -item[2]*v for k, v in item[1].items()} if is_support(item[2], item[1], weights) else None, a))
     filtered_b = [x for x in b if x is not None]
-    if filtered_b:
+    
+    if filterd_b and lam_==0:
         return reduce((lambda x, y: {**x, **y}), filtered_b)
+    
+    elif filtered_b and lam_!=0:
+        c = reduce((lambda x, y: {**x, **y}), filtered_b)
+        feats_ = list(c.keys())
+        d = [(i, c[i], lam_*weights[i]) for i in feats_]
+        return reduce((lambda x, y: {**x, **y}), map(lambda y: {y[0]: y[1]+y[2]} , d))
     else:
         return { key:0 for key in weights.keys() }
