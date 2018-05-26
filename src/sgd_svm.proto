@@ -16,7 +16,7 @@ service SGDSVM{
   rpc sendGradientUpdate(GradientUpdate) returns (Empty) {}
 
   // Asks the new weights from the server
-  rpc getWeights(Auth) returns (Weights) {}
+  rpc getGrads(Auth) returns (Grads) {}
 
   // Sends the computed evaluation update to the server
   rpc sendEvalUpdate(EvalUpdate) returns (Empty) {}
@@ -39,8 +39,8 @@ message GradientUpdate {
 
 // Weights computed composed of:
 //  - json of weights
-message Weights {
-  string weights = 1;
+message Grads {
+  string grads = 1;
 }
 
 // Evaluation (loss + acc) computed composed of:
@@ -50,7 +50,7 @@ message Weights {
 //  - id of the client sending the update
 message EvalUpdate {
   double train_loss_update = 1;
-  double test_loss_update = 2;
+  double valid_loss_update = 2;
   int32 id = 3;
 }
 

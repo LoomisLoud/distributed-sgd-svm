@@ -11,7 +11,9 @@ import sgd_svm_pb2_grpc
 
 # Loading up the configuration
 _NUM_FEATURES = 47236
+_EPOCHS = 20
 _LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+_STOPPING_CRITERION = float(os.environ['STOPPING_CRITERION'])
 _TEST_TO_TRAIN_RATIO = int(os.environ['TEST_TO_TRAIN_RATIO'])
 _MINI_BATCH_SIZE = int(os.environ['MINI_BATCH_SIZE'])
 _ASYNCHRONOUS = os.environ['ASYNCHRONOUS'] in ["True","yes","true","y"]
@@ -31,10 +33,11 @@ class Client(object):
         self.stub = sgd_svm_pb2_grpc.SGDSVMStub(channel)
         self.connected = False
         self.train_set = iter([])
-        self.test_set = iter([])
+        self.training_dataset = {}
+        self.valid_set = iter([])
         self.labels = {}
         self.weights = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
-        self.last_weights_update = {}
+        self.last_grads_update = {}
         self.id = -1
 
     def getDataFromServer(self):
@@ -47,20 +50,23 @@ class Client(object):
             - weights as a string json
         """
         response_iterator = self.stub.getDataLabels(sgd_svm_pb2.Auth(id=self.id))
-        dataset = {}
+        self.training_dataset = {}
         while True:
             try:
                 response = next(response_iterator)
-                dataset.update(json.loads(response.samples_json))
+                self.training_dataset.update(json.loads(response.samples_json))
                 self.labels.update(json.loads(response.labels_json))
             except StopIteration:
                 break
 
-        split_ = int(len(dataset)/_TEST_TO_TRAIN_RATIO)
-        self.train_set = data.grouper(_MINI_BATCH_SIZE, list(dataset.items())[:split_])
-        self.test_set = data.grouper(_MINI_BATCH_SIZE*_TEST_TO_TRAIN_RATIO, list(dataset.items())[split_:])
+        if _TEST_TO_TRAIN_RATIO != 0:
+            split_ = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO)
+            self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items())[:split_])
+            self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TEST_TO_TRAIN_RATIO, list(self.training_dataset.items())[split_:])
+        else:
+            self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
 
-        print("Client {}: All data downloaded and split in training and testing sets".format(self.id))
+        print("Client {}: All data downloaded and split in training and validation sets".format(self.id))
 
     def sendGradientUpdateToServer(self, grad_update):
         """
@@ -69,11 +75,11 @@ class Client(object):
         updated_gradient = sgd_svm_pb2.GradientUpdate(gradient_update_json=json.dumps(grad_update), id=self.id)
         return self.stub.sendGradientUpdate(updated_gradient)
 
-    def sendEvalUpdateToServer(self, train_loss_update, test_loss_update):
+    def sendEvalUpdateToServer(self, train_loss_update, valid_loss_update):
         """
             Sends the computed updated gradient
             """
-        updated_eval = sgd_svm_pb2.EvalUpdate(train_loss_update=train_loss_update, test_loss_update=test_loss_update, id=self.id)
+        updated_eval = sgd_svm_pb2.EvalUpdate(train_loss_update=train_loss_update, valid_loss_update=valid_loss_update, id=self.id)
         return self.stub.sendEvalUpdate(updated_eval)
 
     def sendDoneComputingToServer(self):
@@ -83,8 +89,8 @@ class Client(object):
         """
         return self.stub.sendDoneComputing(sgd_svm_pb2.Auth(id=self.id))
 
-    def getWeightsToServer(self):
-        return self.stub.getWeights(sgd_svm_pb2.Auth(id=self.id))
+    def getGradsToServer(self):
+        return self.stub.getGrads(sgd_svm_pb2.Auth(id=self.id))
 
     def authToServer(self):
         """
@@ -119,50 +125,81 @@ class Client(object):
         self.authToServer()
         print("--------------      Connected       --------------")
         self.getDataFromServer()
-        while True:
-            # Verify that we are still authenticated
-            try:
-                assert self.connected, "ERROR: client {} not connected to the server".format(self.id)
-            except AssertionError:
-                break
+        elapsed = time.time()
+        if _TEST_TO_TRAIN_RATIO != 0:
+            number_batches = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO/_MINI_BATCH_SIZE)
+        else:
+            number_batches = int(len(self.training_dataset) / _MINI_BATCH_SIZE)
 
-            # load the data into variables and compute update
-            # to send it back.
-            try:
-                train_batch = dict(next(self.train_set))
-                test_batch = dict(next(self.test_set))
-            except StopIteration:
-                break
+        epoch = 0
+        previous_valid_loss = 1
+        valid_loss = 0.9
+        while previous_valid_loss - valid_loss > _STOPPING_CRITERION:
+            previous_valid_loss = valid_loss
+            iteration = 1
+            while True:
+                # Verify that we are still authenticated
+                try:
+                    assert self.connected, "ERROR: client {} not connected to the server".format(self.id)
+                except AssertionError:
+                    break
 
-            # separately compute train and test losses
-            train_loss = svm_function.calculate_loss(self.labels, train_batch, self.weights)
-            test_loss = svm_function.calculate_loss(self.labels, test_batch, self.weights)
+                # load the data into variables and compute update
+                # to send it back.
+                try:
+                    train_batch = dict(next(self.train_set))
+                    if _TEST_TO_TRAIN_RATIO != 0:
+                        valid_batch = dict(next(self.valid_set))
+                except StopIteration:
+                    break
 
-            print("train loss on client: {:.6f}".format(train_loss))
-            grad_update = svm_function.mini_batch_update(train_batch, self.labels, self.weights)
+                # separately compute train and valid losses
+                train_loss = svm_function.calculate_loss(self.labels, train_batch, self.weights)
+                if _TEST_TO_TRAIN_RATIO != 0:
+                    valid_loss = svm_function.calculate_loss(self.labels, valid_batch, self.weights)
+                else:
+                    valid_loss = 0
 
-            # send back train/test losses
-            self.sendEvalUpdateToServer(train_loss, test_loss)
+                grad_update = svm_function.mini_batch_update(train_batch, self.labels, self.weights)
 
-            # send back train gardient update
-            self.sendGradientUpdateToServer(grad_update)
+                # send back train/valid losses
+                self.sendEvalUpdateToServer(train_loss, valid_loss)
 
-            if _ASYNCHRONOUS:
-                response = self.getWeightsToServer()
-                received_weights = json.loads(response.weights)
-                if received_weights != self.last_weights_update:
-                    self.last_weights_update = received_weights
-                    for weight_id in received_weights:
-                        self.weights[weight_id] -= _LEARNING_RATE*received_weights[weight_id]
+                # send back train gardient update
+                self.sendGradientUpdateToServer(grad_update)
+
+                if _ASYNCHRONOUS:
+                    response = self.getGradsToServer()
+                    received_grads = json.loads(response.grads)
+                    if received_grads != self.last_grads_update:
+                        self.last_grads_update = received_grads
+                        for weight_id in received_grads:
+                            self.weights[weight_id] -= _LEARNING_RATE*received_grads[weight_id]
+                else:
+                    while self.shouldWaitSynchronousOrNotToServer().answer:
+                        time.sleep(0.0000000000001)
+                    response = self.getGradsToServer()
+                    received_grads = json.loads(response.grads)
+                    self.last_grads_update = received_grads
+                    for weight_id in received_grads:
+                        self.weights[weight_id] -= _LEARNING_RATE*received_grads[weight_id]
+                if iteration%10 == 0:
+                    print('epoch {:2d} | {:5.2f}s elapsed | {:4d}/{:4d} batch | train_loss {:6.4f} | valid_loss {:6.4f}'.
+                        format(epoch+1, time.time() - elapsed, iteration, number_batches, train_loss, valid_loss))
+
+                iteration += 1
+
+            # reset the datasets after each epoch
+            if _TEST_TO_TRAIN_RATIO != 0:
+                split_ = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO)
+                self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items())[:split_])
+                self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TEST_TO_TRAIN_RATIO, list(self.training_dataset.items())[split_:])
             else:
-                while self.shouldWaitSynchronousOrNotToServer().answer:
-                    time.sleep(0.0000000000001)
-                response = self.getWeightsToServer()
-                received_weights = json.loads(response.weights)
-                self.last_weights_update = received_weights
-                for weight_id in received_weights:
-                    self.weights[weight_id] -= _LEARNING_RATE*received_weights[weight_id]
+                self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
 
+            epoch += 1
+            print("previous valid loss:", previous_valid_loss)
+            print("valid loss:", valid_loss)
         self.sendDoneComputingToServer()
 
 if __name__ == '__main__':
@@ -172,8 +209,10 @@ if __name__ == '__main__':
             client = Client()
             client.work()
         except:
-            time.sleep(1)
+            time.sleep(2)
             continue
         else:
             break
+    print("\n-------------- Disconnected from the server --------------")
+    # Normal sleep for the experiment
     time.sleep(1000)

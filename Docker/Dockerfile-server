@@ -3,7 +3,6 @@ FROM python:3.6-slim
 RUN mkdir -p /usr/src/app && pip install --upgrade pip
 WORKDIR /usr/src/app
 
-#COPY requirements.txt data/ src/ /usr/src/app/
 COPY requirements.txt src/ /usr/src/app/
 
 # Server dockerfile gets access to the data

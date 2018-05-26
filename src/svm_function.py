@@ -77,11 +77,6 @@ def calculate_accuracy(labels, samples, weights):
 
     for key in samples.keys():
         feats = list(samples[key].keys())
-        for i in feats:
-            if i not in weights.keys():
-                print(list(weights.keys())[:100])
-                print(i)
-                break
         sample_weight = [(samples[key][i], weights[i]) for i in feats]
         weighted_sum_samples[key] = reduce(add_all , map(multiply , sample_weight))
 

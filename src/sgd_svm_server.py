@@ -11,11 +11,8 @@ import sys
 import threading
 import time
 
-# Constants used throughout the code
-_ONE_DAY_IN_SECONDS = 60 * 60 * 2
 # getting the total number of clients through commandline
 _NUM_FEATURES = 47236
-_NUM_SAMPLES = 781265
 _NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
 _LEARNING_RATE = float(os.environ['LEARNING_RATE'])
 
@@ -36,7 +33,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             - data: the training data
             - labels: dict of labels for all of the samples
             - weights: current weight vector for SGD
-            - weights_cumulator: cumulator used to cumulate the updates sent by each node
+            - grad_cumulator: cumulator used to cumulate the updates sent by each node
             - gradients_received: list of client ids who sent their gradients update
                                   for the current iteration of the algorithm
         """
@@ -44,18 +41,25 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         self.connected_clients = 0
 
         self.lock = threading.Lock()
+        print("Loading the training set...")
         self.data = data.get_batch(floor(data.get_data_size() / nb_clients))
         self.labels = dict([ svm_function.contains_CCAT(tup) for tup in data.load_labels().items()])
+        print("Loading the testing set...")
+        def load_test():
+            self.test_set = data.load_test_set()
+        self.thread = threading.Thread(target=load_test, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
         self.weights = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
-        self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
-        self.sendable_weights = {}
+        self.grad_cumulator = {}
+        self.sendable_grads = {}
         self.gradients_received = []
 
         self.train_loss_received = []
         self.train_loss = 0
-        self.test_loss_received = []
-        self.test_loss = 0
+        self.valid_loss_received = []
+        self.valid_loss = 0
 
         self.current_sample = 0
 
@@ -119,18 +123,23 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         self.gradients_received.append(request.id)
         grad_update = json.loads(request.gradient_update_json)
         # if the gradient update is not empty
-        for weight_id in grad_update.keys():
-            # accumulate gradients of all nodes
-            self.weights_cumulator[weight_id] += grad_update[weight_id]
+        with self.lock:
+            for weight_id in grad_update.keys():
+                # accumulate gradients of all nodes
+                if weight_id in self.grad_cumulator.keys():
+                    self.grad_cumulator[weight_id] += grad_update[weight_id]
+                else:
+                    self.grad_cumulator[weight_id] = grad_update[weight_id]
 
-        # if we are done with the current iteration,
-        # update the weights and reset the cumulator of weights
-        if len(self.gradients_received) == self.total_clients:
-            for weight_id in self.weights_cumulator:
-                self.weights[weight_id] -= _LEARNING_RATE*self.weights_cumulator[weight_id]
-            self.sendable_weights = self.weights_cumulator
-            self.weights_cumulator = {str(feat):0 for feat in range(1, _NUM_FEATURES + 1)}
-            self.gradients_received = []
+            # if we are done with the current iteration,
+            # update the weights and reset the cumulator of weights
+            if len(self.gradients_received) == self.total_clients:
+                for weight_id in self.grad_cumulator:
+                    self.weights[weight_id] -= _LEARNING_RATE*self.grad_cumulator[weight_id]
+
+                self.sendable_grads = self.grad_cumulator
+                self.grad_cumulator = {}
+                self.gradients_received = []
 
         return sgd_svm_pb2.Empty()
 
@@ -142,20 +151,20 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         loss accumulator and the waiting list of workers
         """
         self.train_loss += request.train_loss_update
-        self.test_loss += request.test_loss_update
+        self.valid_loss += request.valid_loss_update
 
-        if len(self.gradients_received) == self.total_clients-1:
+        if len(self.gradients_received) == self.connected_clients-1:
         # save average loss among losses received from all workers
         # for test & train
             self.train_loss_received.append(self.train_loss/self.total_clients)
-            self.test_loss_received.append(self.test_loss/self.total_clients)
+            self.valid_loss_received.append(self.valid_loss/self.total_clients)
             #print("train loss on server:", self.train_loss_received[-1], end='\r')
 
         # if we are done with the current iteration,
         # reset the cumulator of weights
-        if len(self.gradients_received) == self.total_clients-1:
+        if len(self.gradients_received) == self.connected_clients-1:
             self.train_loss=0
-            self.test_loss=0
+            self.valid_loss=0
 
         return sgd_svm_pb2.Empty()
 
@@ -173,24 +182,24 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             # Print the loss/accuracy ?
             # Resetting the batch if we want to run again
             self.data = data.get_batch(floor(data.get_data_size() / self.total_clients))
-
             # Computing accuracy
-            samples = data.load_test_set()
-            labels = {key:self.labels[key] for key in samples.keys()}
-            accuracy = svm_function.calculate_accuracy(labels, samples, self.weights)
+            self.thread.join()
+            split = int(len(self.test_set)/_NUM_TOTAL_CLIENTS)
+            labels = {key:self.labels[key] for key in self.test_set.keys()}
+            accuracy = svm_function.calculate_accuracy(labels, self.test_set, self.weights)
 
             # Plotting the training and testing loss
-            #svm_function.plot_history(self.train_loss_received, self.test_loss_received, 'train vs test')
+            #svm_function.plot_history(self.train_loss_received, self.valid_loss_received, 'train vs test')
             print("Computed accuracy: {:.2f}%".format(accuracy*100))
 
 
         return sgd_svm_pb2.Empty()
 
-    def getWeights(self, request, context):
+    def getGrads(self, request, context):
         """
         Retrieves the weights from the server
         """
-        return sgd_svm_pb2.Weights(weights=json.dumps(self.sendable_weights))
+        return sgd_svm_pb2.Grads(grads=json.dumps(self.sendable_grads))
 
     def auth(self, request, context):
         """

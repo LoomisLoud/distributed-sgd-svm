@@ -53,9 +53,9 @@ spec:
         resources:
           requests:
             memory: "2Gi"
-            cpu: "1"
+            cpu: "$CLIENTS"
           limits:
-            memory: "10Gi"
+            memory: "20Gi"
             cpu: "$CLIENTS"
         ports:
         - containerPort: 50051
@@ -92,12 +92,14 @@ spec:
           value: "$MINI_BATCH_SIZE"
         - name: ASYNCHRONOUS
           value: "$ASYNCHRONOUS"
+        - name: STOPPING_CRITERION
+          value: "$STOPPING_CRITERION"
         tty: true
         image: ic-registry.epfl.ch/systems/grpc-client:latest
         resources:
           requests:
             memory: "4Mi"
-            cpu: "100m"
+            cpu: "1"
           limits:
-            memory: "2Gi"
+            memory: "4Gi"
             cpu: "1"
