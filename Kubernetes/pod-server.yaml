@@ -45,6 +45,8 @@ spec:
           value: "$CLIENTS"
         - name: LEARNING_RATE
           value: "$LEARNING_RATE"
+        - name: STOPPING_CRITERION
+          value: "$STOPPING_CRITERION"
         volumeMounts:
         - mountPath: "/mnt"
           name: dataset-storage

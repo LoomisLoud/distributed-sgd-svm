@@ -14,7 +14,10 @@ import time
 # getting the total number of clients through commandline
 _NUM_FEATURES = 47236
 _NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
-_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+_STOPPING_CRITERION = float(os.environ['STOPPING_CRITERION'])
+#_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+_LEARNING_RATE = svm_function.get_learning_rate(_STOPPING_CRITERION)
+
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
     """

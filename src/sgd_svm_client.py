@@ -12,8 +12,9 @@ import sgd_svm_pb2_grpc
 # Loading up the configuration
 _NUM_FEATURES = 47236
 _EPOCHS = 20
-_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+#_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
 _STOPPING_CRITERION = float(os.environ['STOPPING_CRITERION'])
+_LEARNING_RATE = svm_function.get_learning_rate(_STOPPING_CRITERION)
 _TEST_TO_TRAIN_RATIO = int(os.environ['TEST_TO_TRAIN_RATIO'])
 _MINI_BATCH_SIZE = int(os.environ['MINI_BATCH_SIZE'])
 _ASYNCHRONOUS = os.environ['ASYNCHRONOUS'] in ["True","yes","true","y"]
@@ -135,7 +136,8 @@ class Client(object):
         previous_valid_loss = 1
         valid_loss = 0.9
         while previous_valid_loss - valid_loss > _STOPPING_CRITERION:
-            previous_valid_loss = valid_loss
+            if epoch > 1:
+                previous_valid_loss = valid_loss
             iteration = 1
             while True:
                 # Verify that we are still authenticated
@@ -184,7 +186,7 @@ class Client(object):
                     for weight_id in received_grads:
                         self.weights[weight_id] -= _LEARNING_RATE*received_grads[weight_id]
                 if iteration%10 == 0:
-                    print('epoch {:2d} | {:5.2f}s elapsed | {:4d}/{:4d} batch | train_loss {:6.4f} | valid_loss {:6.4f}'.
+                    print('epoch {:2d} | {:5.2f}s elapsed | {:3d}/{:3d} batch | train_loss {:6.4f} | valid_loss {:6.4f}'.
                         format(epoch+1, time.time() - elapsed, iteration, number_batches, train_loss, valid_loss))
 
                 iteration += 1
@@ -198,8 +200,6 @@ class Client(object):
                 self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
 
             epoch += 1
-            print("previous valid loss:", previous_valid_loss)
-            print("valid loss:", valid_loss)
         self.sendDoneComputingToServer()
 
 if __name__ == '__main__':
