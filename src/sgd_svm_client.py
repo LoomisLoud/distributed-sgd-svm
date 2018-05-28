@@ -11,11 +11,9 @@ import sgd_svm_pb2_grpc
 
 # Loading up the configuration
 _NUM_FEATURES = 47236
-_EPOCHS = 20
-#_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
-_STOPPING_CRITERION = float(os.environ['STOPPING_CRITERION'])
-_LEARNING_RATE = svm_function.get_learning_rate(_STOPPING_CRITERION)
-_TEST_TO_TRAIN_RATIO = int(os.environ['TEST_TO_TRAIN_RATIO'])
+_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
+_STOPPING_CRITERION = svm_function.get_stopping_criteria(_LEARNING_RATE)
+_TRAIN_TO_VALID_RATIO = int(os.environ['TRAIN_TO_VALID_RATIO'])
 _MINI_BATCH_SIZE = int(os.environ['MINI_BATCH_SIZE'])
 _ASYNCHRONOUS = os.environ['ASYNCHRONOUS'] in ["True","yes","true","y"]
 _SERVER_URL = "server-0.hog-service:50051"
@@ -60,10 +58,11 @@ class Client(object):
             except StopIteration:
                 break
 
-        if _TEST_TO_TRAIN_RATIO != 0:
-            split_ = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO)
+        # Split into training and validation sets
+        if _TRAIN_TO_VALID_RATIO != 0:
+            split_ = int(len(self.training_dataset)/_TRAIN_TO_VALID_RATIO)
             self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items())[:split_])
-            self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TEST_TO_TRAIN_RATIO, list(self.training_dataset.items())[split_:])
+            self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TRAIN_TO_VALID_RATIO, list(self.training_dataset.items())[split_:])
         else:
             self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
 
@@ -75,13 +74,6 @@ class Client(object):
         """
         updated_gradient = sgd_svm_pb2.GradientUpdate(gradient_update_json=json.dumps(grad_update), id=self.id)
         return self.stub.sendGradientUpdate(updated_gradient)
-
-    def sendEvalUpdateToServer(self, train_loss_update, valid_loss_update):
-        """
-            Sends the computed updated gradient
-            """
-        updated_eval = sgd_svm_pb2.EvalUpdate(train_loss_update=train_loss_update, valid_loss_update=valid_loss_update, id=self.id)
-        return self.stub.sendEvalUpdate(updated_eval)
 
     def sendDoneComputingToServer(self):
         """
@@ -105,7 +97,7 @@ class Client(object):
             self.id = auth.id
             print("Client {} connected".format(self.id))
         else:
-            print("ERROR, client {} can't connect to server".format(self.id))
+            print("ERROR, this client cannot connect to server")
 
     def shouldWaitSynchronousOrNotToServer(self):
         """
@@ -127,14 +119,16 @@ class Client(object):
         print("--------------      Connected       --------------")
         self.getDataFromServer()
         elapsed = time.time()
-        if _TEST_TO_TRAIN_RATIO != 0:
-            number_batches = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO/_MINI_BATCH_SIZE)
+        if _TRAIN_TO_VALID_RATIO != 0:
+            number_batches = int(len(self.training_dataset) / (1+_TRAIN_TO_VALID_RATIO) / _MINI_BATCH_SIZE)
         else:
             number_batches = int(len(self.training_dataset) / _MINI_BATCH_SIZE)
 
         epoch = 0
         previous_valid_loss = 1
         valid_loss = 0.9
+        accumulated_train_losses = []
+        accumulated_valid_losses = []
         while previous_valid_loss - valid_loss > _STOPPING_CRITERION:
             if epoch > 1:
                 previous_valid_loss = valid_loss
@@ -150,24 +144,24 @@ class Client(object):
                 # to send it back.
                 try:
                     train_batch = dict(next(self.train_set))
-                    if _TEST_TO_TRAIN_RATIO != 0:
+                    if _TRAIN_TO_VALID_RATIO != 0:
                         valid_batch = dict(next(self.valid_set))
                 except StopIteration:
                     break
 
                 # separately compute train and valid losses
                 train_loss = svm_function.calculate_loss(self.labels, train_batch, self.weights)
-                if _TEST_TO_TRAIN_RATIO != 0:
+                if _TRAIN_TO_VALID_RATIO != 0:
                     valid_loss = svm_function.calculate_loss(self.labels, valid_batch, self.weights)
                 else:
                     valid_loss = 0
 
                 grad_update = svm_function.mini_batch_update(train_batch, self.labels, self.weights)
 
-                # send back train/valid losses
-                self.sendEvalUpdateToServer(train_loss, valid_loss)
+                accumulated_train_losses.append(train_loss)
+                accumulated_valid_losses.append(valid_loss)
 
-                # send back train gardient update
+                # send back train gradient update
                 self.sendGradientUpdateToServer(grad_update)
 
                 if _ASYNCHRONOUS:
@@ -191,16 +185,18 @@ class Client(object):
 
                 iteration += 1
 
-            # reset the datasets after each epoch
-            if _TEST_TO_TRAIN_RATIO != 0:
-                split_ = int(len(self.training_dataset)/_TEST_TO_TRAIN_RATIO)
+            # reset the training and validation sets after each epoch
+            if _TRAIN_TO_VALID_RATIO != 0:
+                split_ = int(len(self.training_dataset)/_TRAIN_TO_VALID_RATIO)
                 self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items())[:split_])
-                self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TEST_TO_TRAIN_RATIO, list(self.training_dataset.items())[split_:])
+                self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TRAIN_TO_VALID_RATIO, list(self.training_dataset.items())[split_:])
             else:
                 self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
 
             epoch += 1
         self.sendDoneComputingToServer()
+        print("training losses:", accumulated_train_losses)
+        print("validation losses:", accumulated_valid_losses)
 
 if __name__ == '__main__':
     # Run the client
@@ -214,5 +210,6 @@ if __name__ == '__main__':
         else:
             break
     print("\n-------------- Disconnected from the server --------------")
-    # Normal sleep for the experiment
+    # Sleep after finishing up experiments
+    # to prevent a kubernetes container loop
     time.sleep(1000)

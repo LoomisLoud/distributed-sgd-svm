@@ -11,6 +11,10 @@ defines an iterator on which we can query for samples
 import itertools
 
 def grouper(n, iterable):
+    """
+    Small helper function returning a slice of n
+    as an iterator.
+    """
     it = iter(iterable)
     while True:
        chunk = tuple(itertools.islice(it, n))

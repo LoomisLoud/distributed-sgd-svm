@@ -4,19 +4,19 @@ import data
 import grpc
 import json
 import os
-import sgd_svm_pb2
-import sgd_svm_pb2_grpc
 import svm_function
 import sys
 import threading
 import time
 
-# getting the total number of clients through commandline
+import sgd_svm_pb2
+import sgd_svm_pb2_grpc
+
 _NUM_FEATURES = 47236
-_NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
-_STOPPING_CRITERION = float(os.environ['STOPPING_CRITERION'])
-#_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
-_LEARNING_RATE = svm_function.get_learning_rate(_STOPPING_CRITERION)
+# Loading up the configuration
+#_NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
+_NUM_TOTAL_CLIENTS = 4
+_LEARNING_RATE = float(os.environ['LEARNING_RATE'])
 
 
 class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
@@ -74,16 +74,6 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         while self.connected_clients < self.total_clients:
             continue
 
-    def waitOnGradientUpdates(self, id):
-        """
-        The idea behind waitOnGradientUpdates is for clients to be forced
-        to wait for the other gradients to be done working on their end of
-        the iteration. When all workers are done we empty the waiting list
-        and the while breaks to let the worker continue
-        """
-        while id in self.gradients_received:
-            time.sleep(0.0000000000001)
-
     def shouldWaitSynchronousOrNot(self, request, context):
         return sgd_svm_pb2.Answer(answer=request.id in self.gradients_received)
 
@@ -136,38 +126,13 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
 
             # if we are done with the current iteration,
             # update the weights and reset the cumulator of weights
-            if len(self.gradients_received) == self.total_clients:
+            if len(self.gradients_received) >= self.connected_clients:
                 for weight_id in self.grad_cumulator:
                     self.weights[weight_id] -= _LEARNING_RATE*self.grad_cumulator[weight_id]
 
                 self.sendable_grads = self.grad_cumulator
                 self.grad_cumulator = {}
                 self.gradients_received = []
-
-        return sgd_svm_pb2.Empty()
-
-    def sendEvalUpdate(self, request, context):
-        """
-        Retrieves the updated loss from all workers,
-        average them. If we receive the last loss update,
-        save it for plot later, reset the
-        loss accumulator and the waiting list of workers
-        """
-        self.train_loss += request.train_loss_update
-        self.valid_loss += request.valid_loss_update
-
-        if len(self.gradients_received) == self.connected_clients-1:
-        # save average loss among losses received from all workers
-        # for test & train
-            self.train_loss_received.append(self.train_loss/self.total_clients)
-            self.valid_loss_received.append(self.valid_loss/self.total_clients)
-            #print("train loss on server:", self.train_loss_received[-1], end='\r')
-
-        # if we are done with the current iteration,
-        # reset the cumulator of weights
-        if len(self.gradients_received) == self.connected_clients-1:
-            self.train_loss=0
-            self.valid_loss=0
 
         return sgd_svm_pb2.Empty()
 
@@ -178,13 +143,11 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
         """
         print("Client {} is done computing".format(request.id))
         self.connected_clients -= 1
+        self.gradients_received.append(request.id)
         # if we are the last client, compute
         # the accuracy and display it
         if self.connected_clients == 0:
             print("Computing accuracy...")
-            # Print the loss/accuracy ?
-            # Resetting the batch if we want to run again
-            self.data = data.get_batch(floor(data.get_data_size() / self.total_clients))
             # Computing accuracy
             self.thread.join()
             split = int(len(self.test_set)/_NUM_TOTAL_CLIENTS)
@@ -219,7 +182,7 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             print("Client {} connected".format(self.connected_clients))
             return sgd_svm_pb2.Auth(id=self.connected_clients)
         else:
-            print("ERROR, can't auth new client, maximum threshold of clients reached.".format(self.connected_clients))
+            print("ERROR, can't auth new client, maximum threshold of clients reached.")
             return sgd_svm_pb2.Auth(id=-1)
 
 def serve(clients):
@@ -234,7 +197,8 @@ def serve(clients):
     server.add_insecure_port('[::]:50051')
     server.start()
     print("Server started")
-    # Set for experiments
+    # Sleep after finishing up experiments
+    # to prevent a kubernetes container loop
     time.sleep(1000)
     server.stop(0)
     print("Server stopped")

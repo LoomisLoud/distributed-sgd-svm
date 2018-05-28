@@ -1,6 +1,5 @@
 from functools import reduce
 from math import sqrt
-#import matplotlib.pyplot as plt
 """
 This helper file contains everything related to
 SGD and SVM computations. Simply import the file
@@ -19,19 +18,11 @@ def contains_CCAT(item):
     else:
         return (item[0], -1)
 
-def prepare_standardplot(title, xlabel, logscale):
+def get_stopping_criteria(lr=0.005, lag=0):
     """
-    Initialize plots
+    HOGWILD!'s stopping criteria with respect to
+    the given learning rate.
     """
-    fig, ax1 = plt.subplots()
-    fig.suptitle(title)
-    ax1.set_ylabel('hinge loss')
-    ax1.set_xlabel(xlabel)
-    if logscale:
-        ax1.set_yscale('log')
-    return fig, ax1
-
-def get_learning_rate(stop_cri = 0.00001, lag = 0):
     # Strongly convex modulus
     c = 0.5
     # Lipschitz constant
@@ -46,19 +37,8 @@ def get_learning_rate(stop_cri = 0.00001, lag = 0):
     delta = 1.
     # phi in (0,1)
     phi = 0.9
-    learning_rate = phi*stop_cri*c/(2*L*M*M*omega*(1 + 6*lag*rho + 4*lag*lag*omega*sqrt(delta)))
-    return learning_rate
-
-def plot_history(train,test,title):
-    """
-    Plots learning curves
-    train & test, list
-    """
-    fig, ax1 = prepare_standardplot(title, 'epoch', logscale=False)
-    ax1.plot(train, 'b', label="training")
-    ax1.plot(test, 'r', label="validation")
-    ax1.legend()
-    plt.savefig(str(title)+'.png')
+    stop_cri = lr / (phi*c/(2*L*M*M*omega*(1 + 6*lag*rho + 4*lag*lag*omega*sqrt(delta))))
+    return stop_cri
 
 def calculate_loss(labels, samples, weights):
     """
@@ -119,7 +99,6 @@ def is_support(label, sample, weights):
     return dot_prod*label < 1
 
 def mini_batch_update(batch_, final_labels, weights):
-
     """
     Function that returns the gradient update given multiple samples
     If the sample is not in the support, don't update the gradient (None) for this specific sample

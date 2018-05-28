@@ -45,8 +45,6 @@ spec:
           value: "$CLIENTS"
         - name: LEARNING_RATE
           value: "$LEARNING_RATE"
-        - name: STOPPING_CRITERION
-          value: "$STOPPING_CRITERION"
         volumeMounts:
         - mountPath: "/mnt"
           name: dataset-storage
@@ -88,14 +86,12 @@ spec:
         env:
         - name: LEARNING_RATE
           value: "$LEARNING_RATE"
-        - name: TEST_TO_TRAIN_RATIO
-          value: "$TEST_TO_TRAIN_RATIO"
+        - name: TRAIN_TO_VALID_RATIO
+          value: "$TRAIN_TO_VALID_RATIO"
         - name: MINI_BATCH_SIZE
           value: "$MINI_BATCH_SIZE"
         - name: ASYNCHRONOUS
           value: "$ASYNCHRONOUS"
-        - name: STOPPING_CRITERION
-          value: "$STOPPING_CRITERION"
         tty: true
         image: ic-registry.epfl.ch/systems/grpc-client:latest
         resources:
