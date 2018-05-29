@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 # Set your terminal and experiment settings
 TERMINAL_USED=urxvt;
-CLIENTS=7;
+CLIENTS=5;
 TRAIN_TO_VALID_RATIO=10;
 MINI_BATCH_SIZE=16;
 LEARNING_RATE=0.005;

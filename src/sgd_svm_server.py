@@ -14,8 +14,7 @@ import sgd_svm_pb2_grpc
 
 _NUM_FEATURES = 47236
 # Loading up the configuration
-#_NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
-_NUM_TOTAL_CLIENTS = 4
+_NUM_TOTAL_CLIENTS = int(os.environ['CLIENTS'])
 _LEARNING_RATE = float(os.environ['LEARNING_RATE'])
 
 
@@ -154,10 +153,8 @@ class SGDSVM(sgd_svm_pb2_grpc.SGDSVMServicer):
             labels = {key:self.labels[key] for key in self.test_set.keys()}
             accuracy = svm_function.calculate_accuracy(labels, self.test_set, self.weights)
 
-            # Plotting the training and testing loss
-            #svm_function.plot_history(self.train_loss_received, self.valid_loss_received, 'train vs test')
+            # Printing the training and testing loss
             print("Computed accuracy: {:.2f}%".format(accuracy*100))
-
 
         return sgd_svm_pb2.Empty()
 

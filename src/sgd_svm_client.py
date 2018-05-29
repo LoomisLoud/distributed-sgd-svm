@@ -158,9 +158,6 @@ class Client(object):
 
                 grad_update = svm_function.mini_batch_update(train_batch, self.labels, self.weights)
 
-                accumulated_train_losses.append(train_loss)
-                accumulated_valid_losses.append(valid_loss)
-
                 # send back train gradient update
                 self.sendGradientUpdateToServer(grad_update)
 
@@ -192,6 +189,10 @@ class Client(object):
                 self.valid_set = data.grouper(_MINI_BATCH_SIZE*_TRAIN_TO_VALID_RATIO, list(self.training_dataset.items())[split_:])
             else:
                 self.train_set = data.grouper(_MINI_BATCH_SIZE, list(self.training_dataset.items()))
+
+            accumulated_train_losses.append(train_loss)
+            accumulated_valid_losses.append(valid_loss)
+
 
             epoch += 1
         self.sendDoneComputingToServer()
