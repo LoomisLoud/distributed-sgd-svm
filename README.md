@@ -1,7 +1,7 @@
 # Distributed Support Vector Machine trained with Stochastic Gradient Descent using Kubernetes (HOGWILD!)
-[Brune Bastide](mailto:brune.bastide@epfl.ch) (223967), [Augustin Prado](mailto:augustin.prado@epfl.ch) (237289), [Romain Choukroun](mailto:romain.choukroun@epfl.ch) (203917)
+[Brune Bastide](mailto:brune.bastide@epfl.ch), [Augustin Prado](mailto:augustin.prado@epfl.ch), [Romain Choukroun](mailto:romain.choukroun@gmail.com)
 
-The aim of the project is to run a Support Vector Machine trained using Stochastic Gradient Descent. The current version of the project can be run in synchronous or asynchronous modes, which are explained in the report, see the report folder to learn more !
+This is an example of  how to run a Support Vector Machine trained using Stochastic Gradient Descent distributed using Kubernetes/Docker. The current version of the project can be run in synchronous or asynchronous modes, which are explained in the report, see the report folder to learn more !
 
 ## How to run the project
 
